@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Huella de Carbono - POC</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --verde-oscuro: #1a4d2e;
+      --verde-medio: #2d7a4f;
+      --verde-claro: #4caf50;
+      --verde-fondo: #e8f5e9;
+      --verde-borde: #a5d6a7;
+      --gris-texto: #333;
+      --gris-claro: #f5f5f5;
+      --blanco: #fff;
+      --rojo: #e53935;
+      --amarillo: #fff3cd;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--verde-fondo);
+      color: var(--gris-texto);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, var(--verde-oscuro), var(--verde-medio));
+      color: var(--blanco);
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-badges {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge.ok { background: var(--verde-claro); color: var(--blanco); }
+    .badge.error { background: var(--rojo); color: var(--blanco); }
+    .badge.loading { background: var(--amarillo); color: #856404; }
+
+    /* Main */
+    main {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      background: var(--blanco);
+      border: 1px solid var(--verde-borde);
+      border-bottom: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--verde-medio);
+      border-radius: 8px 8px 0 0;
+      transition: background 0.2s;
+    }
+
+    .tab.active {
+      background: var(--verde-oscuro);
+      color: var(--blanco);
+      border-color: var(--verde-oscuro);
+    }
+
+    .tab:hover:not(.active) {
+      background: var(--verde-fondo);
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--blanco);
+      border: 1px solid var(--verde-borde);
+      border-radius: 0 8px 8px 8px;
+      padding: 1.5rem;
+      display: none;
+    }
+
+    .panel.active { display: block; }
+
+    /* Consultas predefinidas */
+    .query-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .query-card {
+      border: 1px solid var(--verde-borde);
+      border-radius: 8px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .query-card:hover {
+      border-color: var(--verde-claro);
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .query-card .icon {
+      width: 40px;
+      height: 40px;
+      background: var(--verde-fondo);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .query-card .name {
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    /* SQL libre */
+    .sql-editor {
+      width: 100%;
+      min-height: 120px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem;
+      padding: 1rem;
+      border: 1px solid var(--verde-borde);
+      border-radius: 8px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .sql-editor:focus {
+      border-color: var(--verde-claro);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+    }
+
+    .sql-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 0.6rem 1.25rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--verde-medio);
+      color: var(--blanco);
+    }
+
+    .btn-primary:hover { background: var(--verde-oscuro); }
+
+    .btn-secondary {
+      background: var(--gris-claro);
+      color: var(--gris-texto);
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover { background: #e0e0e0; }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .sql-warning {
+      font-size: 0.8rem;
+      color: #888;
+      margin-left: auto;
+    }
+
+    /* Resultados */
+    .results-section {
+      margin-top: 1.5rem;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .results-header h3 {
+      font-size: 1rem;
+      color: var(--verde-oscuro);
+    }
+
+    .results-meta {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .results-sql {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-family: 'Consolas', monospace;
+      font-size: 0.8rem;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+      color: #555;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--verde-borde);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th {
+      background: var(--verde-oscuro);
+      color: var(--blanco);
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    tr:nth-child(even) { background: #fafafa; }
+    tr:hover { background: var(--verde-fondo); }
+
+    /* Historial */
+    .historial-item {
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .historial-item .tipo {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .tipo.predefinida { background: #e3f2fd; color: #1565c0; }
+    .tipo.libre { background: #fff3e0; color: #e65100; }
+
+    .historial-sql {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #555;
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .historial-fecha {
+      font-size: 0.75rem;
+      color: #999;
+      white-space: nowrap;
+    }
+
+    .historial-error {
+      color: var(--rojo);
+      font-size: 0.8rem;
+    }
+
+    /* Error message */
+    .error-msg {
+      background: #ffebee;
+      border: 1px solid #ef9a9a;
+      color: var(--rojo);
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #888;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--verde-borde);
+      border-top-color: var(--verde-claro);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      padding: 3rem;
+      color: #aaa;
+    }
+
+    .empty .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: #999;
+      font-size: 0.8rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>&#127793; Calculadora Huella de Carbono</h1>
+    <div class="status-badges">
+      <span class="badge loading" id="mysql-status">MySQL: verificando...</span>
+      <span class="badge loading" id="mongo-status">MongoDB: verificando...</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('predefinidas')">&#128202; Consultas predefinidas</div>
+      <div class="tab" onclick="switchTab('sql')">&#128187; SQL libre</div>
+      <div class="tab" onclick="switchTab('historial')">&#128214; Historial</div>
+    </div>
+
+    <!-- Panel: Consultas predefinidas -->
+    <div class="panel active" id="panel-predefinidas">
+      <p style="margin-bottom: 1rem; color: #666;">Selecciona una consulta para ejecutarla sobre la base de datos MySQL:</p>
+      <div class="query-grid" id="query-grid">
+        <div class="loading"><span class="spinner"></span> Cargando consultas...</div>
+      </div>
+      <div class="results-section" id="results-predefinidas" style="display:none;"></div>
+    </div>
+
+    <!-- Panel: SQL libre -->
+    <div class="panel" id="panel-sql">
+      <p style="margin-bottom: 0.75rem; color: #666;">Escribe una consulta SQL para ejecutarla directamente:</p>
+      <textarea class="sql-editor" id="sql-input" placeholder="SELECT * FROM empresa LIMIT 10;"></textarea>
+      <div class="sql-actions">
+        <button class="btn btn-primary" id="btn-ejecutar" onclick="ejecutarSQL()">&#9654; Ejecutar</button>
+        <button class="btn btn-secondary" onclick="limpiarSQL()">Limpiar</button>
+        <span class="sql-warning">Solo se permiten SELECT, SHOW y DESCRIBE</span>
+      </div>
+      <div class="results-section" id="results-sql" style="display:none;"></div>
+    </div>
+
+    <!-- Panel: Historial -->
+    <div class="panel" id="panel-historial">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <p style="color: #666;">Consultas guardadas en MongoDB (JSON):</p>
+        <button class="btn btn-secondary" onclick="cargarHistorial()">&#128260; Actualizar</button>
+      </div>
+      <div id="historial-list">
+        <div class="loading"><span class="spinner"></span> Cargando historial...</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    POC Huella de Carbono &mdash; TICS320 &mdash; ODS 13.2.2 &mdash; MySQL + MongoDB + Node.js
+  </footer>
+
+  <script>
+    const API = '';
+
+    // =============================================
+    // Tabs
+    // =============================================
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        const panels = ['predefinidas', 'sql', 'historial'];
+        const isActive = panels[i] === tab;
+        t.classList.toggle('active', isActive);
+        document.getElementById('panel-' + panels[i]).classList.toggle('active', isActive);
+      });
+      if (tab === 'historial') cargarHistorial();
+    }
+
+    // =============================================
+    // Estado de conexiones
+    // =============================================
+    async function checkStatus() {
+      try {
+        const res = await fetch(API + '/api/status');
+        const data = await res.json();
+
+        const mysqlBadge = document.getElementById('mysql-status');
+        const mongoBadge = document.getElementById('mongo-status');
+
+        mysqlBadge.textContent = 'MySQL: ' + (data.mysql ? 'conectado' : 'error');
+        mysqlBadge.className = 'badge ' + (data.mysql ? 'ok' : 'error');
+
+        mongoBadge.textContent = 'MongoDB: ' + (data.mongodb ? 'conectado' : 'error');
+        mongoBadge.className = 'badge ' + (data.mongodb ? 'ok' : 'error');
+      } catch (e) {
+        document.getElementById('mysql-status').textContent = 'MySQL: sin conexion';
+        document.getElementById('mysql-status').className = 'badge error';
+        document.getElementById('mongo-status').textContent = 'MongoDB: sin conexion';
+        document.getElementById('mongo-status').className = 'badge error';
+      }
+    }
+
+    // =============================================
+    // Consultas predefinidas
+    // =============================================
+    async function cargarConsultas() {
+      try {
+        const res = await fetch(API + '/api/consultas');
+        const consultas = await res.json();
+        const icons = ['&#127981;', '&#127759;', '&#128200;', '&#128197;', '&#127758;', '&#9889;'];
+        const grid = document.getElementById('query-grid');
+        grid.innerHTML = consultas.map((c, i) => `
+          <div class="query-card" onclick="ejecutarPredefinida('${c.id}')">
+            <div class="icon">${icons[i] || '&#128269;'}</div>
+            <div class="name">${c.nombre}</div>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('query-grid').innerHTML =
+          '<div class="error-msg">Error cargando consultas: ' + e.message + '</div>';
+      }
+    }
+
+    async function ejecutarPredefinida(id) {
+      const section = document.getElementById('results-predefinidas');
+      section.style.display = 'block';
+      section.innerHTML = '<div class="loading"><span class="spinner"></span> Ejecutando consulta...</div>';
+
+      try {
+        const res = await fetch(API + '/api/consultas/' + id);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        mostrarResultados(section, data.nombre, data.sql, data.datos);
+      } catch (e) {
+        section.innerHTML = '<div class="error-msg">Error: ' + e.message + '</div>';
+      }
+    }
+
+    // =============================================
+    // SQL libre
+    // =============================================
+    async function ejecutarSQL() {
+      const sql = document.getElementById('sql-input').value.trim();
+      if (!sql) return;
+
+      const section = document.getElementById('results-sql');
+      const btn = document.getElementById('btn-ejecutar');
+      section.style.display = 'block';
+      section.innerHTML = '<div class="loading"><span class="spinner"></span> Ejecutando...</div>';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API + '/api/sql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        mostrarResultados(section, 'Resultado SQL libre', sql, data.datos);
+      } catch (e) {
+        section.innerHTML = '<div class="error-msg">Error: ' + e.message + '</div>';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function limpiarSQL() {
+      document.getElementById('sql-input').value = '';
+      document.getElementById('results-sql').style.display = 'none';
+    }
+
+    // Ejecutar con Ctrl+Enter
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('sql-input').addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') ejecutarSQL();
+      });
+    });
+
+    // =============================================
+    // Mostrar resultados en tabla
+    // =============================================
+    function mostrarResultados(container, titulo, sql, datos) {
+      if (!datos || datos.length === 0) {
+        container.innerHTML = `
+          <div class="results-header">
+            <h3>${titulo}</h3>
+            <span class="results-meta">0 filas</span>
+          </div>
+          <div class="results-sql">${escapeHtml(sql)}</div>
+          <div class="empty">
+            <div class="icon">&#128196;</div>
+            <p>Sin resultados</p>
+          </div>`;
+        return;
+      }
+
+      const cols = Object.keys(datos[0]);
+      container.innerHTML = `
+        <div class="results-header">
+          <h3>${titulo}</h3>
+          <span class="results-meta">${datos.length} fila${datos.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="results-sql">${escapeHtml(sql)}</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr>${cols.map(c => '<th>' + escapeHtml(c) + '</th>').join('')}</tr></thead>
+            <tbody>${datos.map(row => '<tr>' + cols.map(c => '<td>' + escapeHtml(String(row[c] ?? '')) + '</td>').join('') + '</tr>').join('')}</tbody>
+          </table>
+        </div>`;
+    }
+
+    // =============================================
+    // Historial (MongoDB)
+    // =============================================
+    async function cargarHistorial() {
+      const list = document.getElementById('historial-list');
+      list.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando historial...</div>';
+
+      try {
+        const res = await fetch(API + '/api/historial');
+        const historial = await res.json();
+
+        if (historial.length === 0) {
+          list.innerHTML = '<div class="empty"><div class="icon">&#128214;</div><p>No hay consultas registradas aun</p></div>';
+          return;
+        }
+
+        list.innerHTML = historial.map(h => `
+          <div class="historial-item">
+            <span class="tipo ${h.tipo}">${h.tipo}</span>
+            <div class="historial-sql">${escapeHtml(h.consulta.substring(0, 150))}${h.consulta.length > 150 ? '...' : ''}</div>
+            <div style="text-align: right;">
+              <div class="historial-fecha">${new Date(h.fecha).toLocaleString('es-CL')}</div>
+              ${h.error ? '<div class="historial-error">Error</div>' : '<div style="font-size:0.75rem;color:#4caf50;">' + h.resultados + ' filas</div>'}
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        list.innerHTML = '<div class="error-msg">Error cargando historial: ' + e.message + '</div>';
+      }
+    }
+
+    // =============================================
+    // Utilidades
+    // =============================================
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Init
+    checkStatus();
+    cargarConsultas();
+  </script>
+</body>
+</html>
