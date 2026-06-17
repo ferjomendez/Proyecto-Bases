@@ -1004,6 +1004,20 @@
 
     function t(key) { return T[currentLang][key] || T.es[key] || key; }
 
+    const QUERY_NAMES_EN = {
+      emisiones_por_empresa: 'Total emissions by company',
+      top_sectores: 'Top polluting sectors',
+      emisiones_por_scope: 'Emissions by scope (1, 2, 3)',
+      consumos_recientes: 'Last 20 recorded consumptions',
+      empresas_por_pais: 'Companies by country',
+      fuentes_emision: 'Emission sources catalog'
+    };
+
+    function queryName(id, originalName) {
+      if (currentLang === 'en' && QUERY_NAMES_EN[id]) return QUERY_NAMES_EN[id];
+      return originalName;
+    }
+
     const CATEGORIAS_MAP = {
       emisiones_por_empresa: 'cat_empresa',
       top_sectores:          'cat_sector',
@@ -1111,7 +1125,7 @@
           <div class="query-card" onclick="ejecutarPredefinida('${c.id}')" tabindex="0" role="button"
                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ejecutarPredefinida('${c.id}')}">
             <span class="query-tag">${escapeHtml(categoria(c.id))}</span>
-            <div class="query-name">${escapeHtml(c.nombre)}</div>
+            <div class="query-name">${escapeHtml(queryName(c.id, c.nombre))}</div>
             <div class="query-run">${escapeHtml(t('ejecutar_hover'))}</div>
           </div>
         `).join('');
