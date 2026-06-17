@@ -516,6 +516,87 @@
       margin-top: 0.2rem;
     }
 
+    /* ========== Forms (Agregar datos) ========== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.25rem;
+    }
+    .form-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 1.4rem;
+      background: var(--surface);
+    }
+    .form-card-header { margin-bottom: 1.2rem; }
+    .form-card-header h3 {
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 0.4rem;
+    }
+    .form-field {
+      margin-bottom: 0.85rem;
+    }
+    .form-field label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+    .form-field input,
+    .form-field select {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      font-family: var(--display);
+      font-size: 0.88rem;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s;
+      outline: none;
+    }
+    .form-field input:focus,
+    .form-field select:focus {
+      border-color: var(--jade);
+      box-shadow: 0 0 0 3px rgba(64,145,108,0.12);
+    }
+    .form-field input::placeholder { color: #A0B5A8; }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .emision-preview {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--moss);
+      background: var(--lichen);
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--r);
+      margin-bottom: 0.5rem;
+    }
+    .success-msg {
+      background: #E4F5EC;
+      border: 1px solid #A8D9BA;
+      border-left: 3px solid var(--signal);
+      color: var(--forest);
+      padding: 0.75rem 1rem;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+
     /* ========== Feedback states ========== */
     .error-msg {
       background: var(--error-bg);
@@ -638,6 +719,7 @@
       <button class="tab active" type="button" role="tab" aria-selected="true" onclick="switchTab('predefinidas')">Consultas predefinidas</button>
       <button class="tab" type="button" role="tab" onclick="switchTab('sql')">SQL libre</button>
       <button class="tab" type="button" role="tab" onclick="switchTab('historial')">Historial</button>
+      <button class="tab" type="button" role="tab" onclick="switchTab('agregar')">Agregar datos</button>
     </div>
 
     <!-- Panel: Consultas predefinidas -->
@@ -674,6 +756,84 @@
         <div class="loading"><span class="spinner"></span> Cargando historial...</div>
       </div>
     </div>
+    <!-- Panel: Agregar datos -->
+    <div class="panel" id="panel-agregar" role="tabpanel">
+      <div class="form-grid">
+        <!-- Formulario 1: Registro de empresa -->
+        <div class="form-card">
+          <div class="form-card-header">
+            <h3>Registrar empresa</h3>
+            <p class="panel-intro" style="margin-bottom:0;">Inserta en tabla empresa con FK a sector y pais</p>
+          </div>
+          <form id="form-empresa" onsubmit="registrarEmpresa(event)">
+            <div class="form-field">
+              <label for="emp-nombre">Nombre de la empresa</label>
+              <input type="text" id="emp-nombre" required placeholder="Ej: EcoTransporte SA">
+            </div>
+            <div class="form-field">
+              <label for="emp-tamano">Tamano</label>
+              <select id="emp-tamano" required>
+                <option value="">Seleccionar...</option>
+                <option value="micro">Micro</option>
+                <option value="pequena">Pequena</option>
+                <option value="mediana">Mediana</option>
+                <option value="grande">Grande</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="emp-sector">Sector</label>
+              <select id="emp-sector" required><option value="">Cargando...</option></select>
+            </div>
+            <div class="form-field">
+              <label for="emp-pais">Pais</label>
+              <select id="emp-pais" required><option value="">Cargando...</option></select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">Registrar empresa</button>
+          </form>
+          <div id="msg-empresa" style="margin-top:0.85rem;"></div>
+        </div>
+
+        <!-- Formulario 2: Registro de consumo -->
+        <div class="form-card">
+          <div class="form-card-header">
+            <h3>Registrar consumo</h3>
+            <p class="panel-intro" style="margin-bottom:0;">Inserta en consumo + calcula emision automaticamente</p>
+          </div>
+          <form id="form-consumo" onsubmit="registrarConsumo(event)">
+            <div class="form-field">
+              <label for="con-empresa">Empresa</label>
+              <select id="con-empresa" required><option value="">Cargando...</option></select>
+            </div>
+            <div class="form-field">
+              <label for="con-fuente">Fuente de emision</label>
+              <select id="con-fuente" required><option value="">Cargando...</option></select>
+            </div>
+            <div class="form-field">
+              <label for="con-cantidad">Cantidad</label>
+              <input type="number" id="con-cantidad" required step="0.01" min="0" placeholder="Ej: 15000">
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label for="con-periodo">Periodo</label>
+                <select id="con-periodo" required>
+                  <option value="">Seleccionar...</option>
+                  <option value="mensual">Mensual</option>
+                  <option value="trimestral">Trimestral</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="con-fecha">Fecha de registro</label>
+                <input type="date" id="con-fecha" required>
+              </div>
+            </div>
+            <div id="emision-preview" class="emision-preview" style="display:none;"></div>
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">Registrar consumo</button>
+          </form>
+          <div id="msg-consumo" style="margin-top:0.85rem;"></div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer>
@@ -699,13 +859,14 @@
     // =============================================
     function switchTab(tab) {
       document.querySelectorAll('.tab').forEach((t, i) => {
-        const panels = ['predefinidas', 'sql', 'historial'];
+        const panels = ['predefinidas', 'sql', 'historial', 'agregar'];
         const isActive = panels[i] === tab;
         t.classList.toggle('active', isActive);
         t.setAttribute('aria-selected', isActive ? 'true' : 'false');
         document.getElementById('panel-' + panels[i]).classList.toggle('active', isActive);
       });
       if (tab === 'historial') cargarHistorial();
+      if (tab === 'agregar') cargarCatalogos();
     }
 
     // =============================================
@@ -900,6 +1061,124 @@
       const div = document.createElement('div');
       div.textContent = str;
       return div.innerHTML;
+    }
+
+    // =============================================
+    // Agregar datos — catálogos y formularios
+    // =============================================
+    let catalogosCargados = false;
+    let fuentesData = [];
+
+    async function cargarCatalogos() {
+      if (catalogosCargados) return;
+      try {
+        const [sectores, paises, empresas, fuentes] = await Promise.all([
+          fetch(API + '/api/sectores').then(r => r.json()),
+          fetch(API + '/api/paises').then(r => r.json()),
+          fetch(API + '/api/empresas').then(r => r.json()),
+          fetch(API + '/api/fuentes').then(r => r.json())
+        ]);
+
+        fuentesData = fuentes;
+
+        poblarSelect('emp-sector', sectores.map(s => ({ value: s.id_sector, text: s.nombre })));
+        poblarSelect('emp-pais', paises.map(p => ({ value: p.id_pais, text: p.nombre })));
+        poblarSelect('con-empresa', empresas.map(e => ({ value: e.id_empresa, text: e.nombre })));
+        poblarSelect('con-fuente', fuentes.map(f => ({ value: f.id_fuente, text: f.nombre + ' (' + f.unidad + ' - ' + f.scope + ')' })));
+
+        // Preview de emisión al cambiar fuente o cantidad
+        document.getElementById('con-fuente').addEventListener('change', actualizarPreview);
+        document.getElementById('con-cantidad').addEventListener('input', actualizarPreview);
+
+        // Fecha por defecto: hoy
+        document.getElementById('con-fecha').value = new Date().toISOString().split('T')[0];
+
+        catalogosCargados = true;
+      } catch (e) {
+        console.error('Error cargando catálogos:', e);
+      }
+    }
+
+    function poblarSelect(id, opciones) {
+      const sel = document.getElementById(id);
+      sel.innerHTML = '<option value="">Seleccionar...</option>' +
+        opciones.map(o => '<option value="' + o.value + '">' + escapeHtml(o.text) + '</option>').join('');
+    }
+
+    function actualizarPreview() {
+      const fuenteId = parseInt(document.getElementById('con-fuente').value);
+      const cantidad = parseFloat(document.getElementById('con-cantidad').value);
+      const preview = document.getElementById('emision-preview');
+
+      if (!fuenteId || !cantidad || cantidad <= 0) {
+        preview.style.display = 'none';
+        return;
+      }
+
+      const fuente = fuentesData.find(f => f.id_fuente === fuenteId);
+      if (!fuente) { preview.style.display = 'none'; return; }
+
+      const emision = cantidad * parseFloat(fuente.factor_emision);
+      preview.style.display = 'block';
+      preview.textContent = cantidad.toLocaleString('es-CL') + ' ' + fuente.unidad +
+        ' x ' + fuente.factor_emision + ' = ' + emision.toLocaleString('es-CL', { maximumFractionDigits: 2 }) + ' kg CO2eq';
+    }
+
+    async function registrarEmpresa(e) {
+      e.preventDefault();
+      const msg = document.getElementById('msg-empresa');
+      msg.innerHTML = '<div class="loading"><span class="spinner"></span> Registrando...</div>';
+
+      try {
+        const res = await fetch(API + '/api/empresas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: document.getElementById('emp-nombre').value,
+            tamano: document.getElementById('emp-tamano').value,
+            id_sector: document.getElementById('emp-sector').value,
+            id_pais: document.getElementById('emp-pais').value
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        msg.innerHTML = '<div class="success-msg">Empresa registrada (ID: ' + data.id + ')</div>';
+        document.getElementById('form-empresa').reset();
+        // Refrescar dropdown de empresas en formulario de consumo
+        catalogosCargados = false;
+        cargarCatalogos();
+      } catch (err) {
+        msg.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(err.message) + '</div>';
+      }
+    }
+
+    async function registrarConsumo(e) {
+      e.preventDefault();
+      const msg = document.getElementById('msg-consumo');
+      msg.innerHTML = '<div class="loading"><span class="spinner"></span> Registrando...</div>';
+
+      try {
+        const res = await fetch(API + '/api/consumos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_empresa: document.getElementById('con-empresa').value,
+            id_fuente: document.getElementById('con-fuente').value,
+            cantidad: document.getElementById('con-cantidad').value,
+            periodo: document.getElementById('con-periodo').value,
+            fecha_registro: document.getElementById('con-fecha').value
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        msg.innerHTML = '<div class="success-msg">Consumo registrado — Emision calculada: ' +
+          parseFloat(data.emision_total_kg).toLocaleString('es-CL', { maximumFractionDigits: 2 }) + ' kg CO2eq</div>';
+        document.getElementById('form-consumo').reset();
+        document.getElementById('con-fecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('emision-preview').style.display = 'none';
+      } catch (err) {
+        msg.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(err.message) + '</div>';
+      }
     }
 
     // Init

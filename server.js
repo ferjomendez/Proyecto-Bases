@@ -204,6 +204,110 @@ app.get('/api/historial', async (req, res) => {
   }
 });
 
+// =============================================
+// Catálogos (para poblar dropdowns)
+// =============================================
+app.get('/api/sectores', async (req, res) => {
+  try {
+    const [rows] = await mysqlPool.execute('SELECT id_sector, nombre FROM sector ORDER BY nombre');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/paises', async (req, res) => {
+  try {
+    const [rows] = await mysqlPool.execute('SELECT id_pais, nombre, codigo_iso FROM pais ORDER BY nombre');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/empresas', async (req, res) => {
+  try {
+    const [rows] = await mysqlPool.execute('SELECT id_empresa, nombre FROM empresa ORDER BY nombre');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/fuentes', async (req, res) => {
+  try {
+    const [rows] = await mysqlPool.execute(`SELECT id_fuente, nombre, factor_emision, unidad,
+      CASE scope WHEN 1 THEN 'Scope 1' WHEN 2 THEN 'Scope 2' WHEN 3 THEN 'Scope 3' END AS scope
+      FROM fuente_emision ORDER BY scope, nombre`);
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// =============================================
+// Registro de empresa
+// =============================================
+app.post('/api/empresas', async (req, res) => {
+  const { nombre, tamano, id_sector, id_pais } = req.body;
+  if (!nombre || !tamano || !id_sector || !id_pais) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
+  const tamanosValidos = ['micro', 'pequena', 'mediana', 'grande'];
+  if (!tamanosValidos.includes(tamano)) {
+    return res.status(400).json({ error: 'Tamaño inválido. Use: micro, pequena, mediana, grande' });
+  }
+  try {
+    const sql = 'INSERT INTO empresa (nombre, tamano, id_sector, id_pais) VALUES (?, ?, ?, ?)';
+    const [result] = await mysqlPool.execute(sql, [nombre, tamano, parseInt(id_sector), parseInt(id_pais)]);
+    await logQuery('insercion', sql, [{ insertId: result.insertId }]);
+    res.json({ mensaje: 'Empresa registrada', id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =============================================
+// Registro de consumo + cálculo automático de emisión
+// =============================================
+app.post('/api/consumos', async (req, res) => {
+  const { id_empresa, id_fuente, cantidad, periodo, fecha_registro } = req.body;
+  if (!id_empresa || !id_fuente || !cantidad || !periodo || !fecha_registro) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
+  const periodosValidos = ['mensual', 'trimestral', 'anual'];
+  if (!periodosValidos.includes(periodo)) {
+    return res.status(400).json({ error: 'Periodo inválido. Use: mensual, trimestral, anual' });
+  }
+
+  const conn = await mysqlPool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Obtener factor de emisión
+    const [fuentes] = await conn.execute('SELECT factor_emision FROM fuente_emision WHERE id_fuente = ?', [parseInt(id_fuente)]);
+    if (fuentes.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Fuente de emisión no encontrada' });
+    }
+
+    // Insertar consumo
+    const sqlConsumo = 'INSERT INTO consumo (id_empresa, id_fuente, cantidad, periodo, fecha_registro) VALUES (?, ?, ?, ?, ?)';
+    const [resultConsumo] = await conn.execute(sqlConsumo, [parseInt(id_empresa), parseInt(id_fuente), parseFloat(cantidad), periodo, fecha_registro]);
+
+    // Calcular e insertar emisión
+    const emisionTotal = parseFloat(cantidad) * parseFloat(fuentes[0].factor_emision);
+    const sqlCalculo = 'INSERT INTO calculo_emision (id_consumo, emision_total) VALUES (?, ?)';
+    await conn.execute(sqlCalculo, [resultConsumo.insertId, emisionTotal]);
+
+    await conn.commit();
+    await logQuery('insercion', `${sqlConsumo} + calculo_emision`, [{ insertId: resultConsumo.insertId, emisionTotal }]);
+
+    res.json({
+      mensaje: 'Consumo registrado y emisión calculada',
+      id_consumo: resultConsumo.insertId,
+      emision_total_kg: emisionTotal
+    });
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
 // Estado de conexiones
 app.get('/api/status', async (req, res) => {
   let mysqlOk = false;
