@@ -637,6 +637,32 @@
     .empty svg { width: 34px; height: 34px; color: var(--line); margin-bottom: 0.75rem; }
     .empty p { font-family: var(--mono); font-size: 0.8rem; }
 
+    /* ========== Language toggle ========== */
+    .lang-toggle {
+      display: flex;
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .lang-btn {
+      appearance: none;
+      border: none;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+      background: rgba(255,255,255,0.05);
+      color: #8FB6A0;
+      transition: background 0.2s var(--ease), color 0.2s;
+    }
+    .lang-btn:hover { background: rgba(255,255,255,0.1); }
+    .lang-btn.active {
+      background: var(--signal);
+      color: var(--forest);
+    }
+
     /* ========== Footer ========== */
     footer {
       text-align: center;
@@ -703,28 +729,34 @@
           </svg>
         </div>
         <div class="brand-text">
-          <h1>Calculadora de Huella de Carbono</h1>
-          <div class="sub">Consola de medición &middot; kg CO&#8322;e</div>
+          <h1 data-i18n="title">Calculadora de Huella de Carbono</h1>
+          <div class="sub" data-i18n="subtitle">Consola de medicion &middot; kg CO&#8322;e</div>
         </div>
       </div>
-      <div class="telemetry" role="status" aria-live="polite">
-        <span class="badge loading" id="mysql-status">MySQL: verificando...</span>
-        <span class="badge loading" id="mongo-status">MongoDB: verificando...</span>
+      <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">
+        <div class="telemetry" role="status" aria-live="polite">
+          <span class="badge loading" id="mysql-status">MySQL: verificando...</span>
+          <span class="badge loading" id="mongo-status">MongoDB: verificando...</span>
+        </div>
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-es" onclick="setLang('es')">ES</button>
+          <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+        </div>
       </div>
     </div>
   </header>
 
   <main>
     <div class="tabs" role="tablist" aria-label="Modos de consulta">
-      <button class="tab active" type="button" role="tab" aria-selected="true" onclick="switchTab('predefinidas')">Consultas predefinidas</button>
-      <button class="tab" type="button" role="tab" onclick="switchTab('sql')">SQL libre</button>
-      <button class="tab" type="button" role="tab" onclick="switchTab('historial')">Historial</button>
-      <button class="tab" type="button" role="tab" onclick="switchTab('agregar')">Agregar datos</button>
+      <button class="tab active" type="button" role="tab" aria-selected="true" onclick="switchTab('predefinidas')" data-i18n="tab_predefinidas">Consultas predefinidas</button>
+      <button class="tab" type="button" role="tab" onclick="switchTab('sql')" data-i18n="tab_sql">SQL libre</button>
+      <button class="tab" type="button" role="tab" onclick="switchTab('historial')" data-i18n="tab_historial">Historial</button>
+      <button class="tab" type="button" role="tab" onclick="switchTab('agregar')" data-i18n="tab_agregar">Agregar datos</button>
     </div>
 
     <!-- Panel: Consultas predefinidas -->
     <div class="panel active" id="panel-predefinidas" role="tabpanel">
-      <p class="panel-intro">Selecciona un modulo para ejecutarlo sobre MySQL</p>
+      <p class="panel-intro" data-i18n="intro_predefinidas">Selecciona un modulo para ejecutarlo sobre MySQL</p>
       <div class="query-grid" id="query-grid">
         <div class="loading"><span class="spinner"></span> Cargando consultas...</div>
       </div>
@@ -733,14 +765,14 @@
 
     <!-- Panel: SQL libre -->
     <div class="panel" id="panel-sql" role="tabpanel">
-      <p class="panel-intro">Escribe una consulta para ejecutarla directamente</p>
+      <p class="panel-intro" data-i18n="intro_sql">Escribe una consulta para ejecutarla directamente</p>
       <div class="console">
-        <div class="console-bar"><span class="dot"></span> consola sql &middot; solo lectura</div>
+        <div class="console-bar"><span class="dot"></span> <span data-i18n="console_bar">consola sql &middot; solo lectura</span></div>
         <textarea class="sql-editor" id="sql-input" spellcheck="false" placeholder="SELECT * FROM empresa LIMIT 10;"></textarea>
       </div>
       <div class="sql-actions">
-        <button class="btn btn-primary" id="btn-ejecutar" onclick="ejecutarSQL()">Ejecutar</button>
-        <button class="btn btn-secondary" onclick="limpiarSQL()">Limpiar</button>
+        <button class="btn btn-primary" id="btn-ejecutar" onclick="ejecutarSQL()" data-i18n="btn_ejecutar">Ejecutar</button>
+        <button class="btn btn-secondary" onclick="limpiarSQL()" data-i18n="btn_limpiar">Limpiar</button>
         <span class="sql-warning">SELECT &middot; SHOW &middot; DESCRIBE <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span></span>
       </div>
       <div class="results-section" id="results-sql" style="display:none;"></div>
@@ -749,8 +781,8 @@
     <!-- Panel: Historial -->
     <div class="panel" id="panel-historial" role="tabpanel">
       <div class="panel-head">
-        <p class="panel-intro" style="margin-bottom:0;">Registro de consultas en MongoDB</p>
-        <button class="btn btn-secondary" onclick="cargarHistorial()">Actualizar</button>
+        <p class="panel-intro" style="margin-bottom:0;" data-i18n="intro_historial">Registro de consultas en MongoDB</p>
+        <button class="btn btn-secondary" onclick="cargarHistorial()" data-i18n="btn_actualizar">Actualizar</button>
       </div>
       <div id="historial-list">
         <div class="loading"><span class="spinner"></span> Cargando historial...</div>
@@ -762,16 +794,16 @@
         <!-- Formulario 1: Registro de empresa -->
         <div class="form-card">
           <div class="form-card-header">
-            <h3>Registrar empresa</h3>
-            <p class="panel-intro" style="margin-bottom:0;">Inserta en tabla empresa con FK a sector y pais</p>
+            <h3 data-i18n="form_empresa_title">Registrar empresa</h3>
+            <p class="panel-intro" style="margin-bottom:0;" data-i18n="form_empresa_desc">Inserta en tabla empresa con FK a sector y pais</p>
           </div>
           <form id="form-empresa" onsubmit="registrarEmpresa(event)">
             <div class="form-field">
-              <label for="emp-nombre">Nombre de la empresa</label>
+              <label for="emp-nombre" data-i18n="lbl_emp_nombre">Nombre de la empresa</label>
               <input type="text" id="emp-nombre" required placeholder="Ej: EcoTransporte SA">
             </div>
             <div class="form-field">
-              <label for="emp-tamano">Tamano</label>
+              <label for="emp-tamano" data-i18n="lbl_tamano">Tamano</label>
               <select id="emp-tamano" required>
                 <option value="">Seleccionar...</option>
                 <option value="micro">Micro</option>
@@ -781,14 +813,14 @@
               </select>
             </div>
             <div class="form-field">
-              <label for="emp-sector">Sector</label>
+              <label for="emp-sector" data-i18n="lbl_sector">Sector</label>
               <select id="emp-sector" required><option value="">Cargando...</option></select>
             </div>
             <div class="form-field">
-              <label for="emp-pais">Pais</label>
+              <label for="emp-pais" data-i18n="lbl_pais">Pais</label>
               <select id="emp-pais" required><option value="">Cargando...</option></select>
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">Registrar empresa</button>
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;" data-i18n="btn_registrar_empresa">Registrar empresa</button>
           </form>
           <div id="msg-empresa" style="margin-top:0.85rem;"></div>
         </div>
@@ -796,25 +828,25 @@
         <!-- Formulario 2: Registro de consumo -->
         <div class="form-card">
           <div class="form-card-header">
-            <h3>Registrar consumo</h3>
-            <p class="panel-intro" style="margin-bottom:0;">Inserta en consumo + calcula emision automaticamente</p>
+            <h3 data-i18n="form_consumo_title">Registrar consumo</h3>
+            <p class="panel-intro" style="margin-bottom:0;" data-i18n="form_consumo_desc">Inserta en consumo + calcula emision automaticamente</p>
           </div>
           <form id="form-consumo" onsubmit="registrarConsumo(event)">
             <div class="form-field">
-              <label for="con-empresa">Empresa</label>
+              <label for="con-empresa" data-i18n="lbl_empresa">Empresa</label>
               <select id="con-empresa" required><option value="">Cargando...</option></select>
             </div>
             <div class="form-field">
-              <label for="con-fuente">Fuente de emision</label>
+              <label for="con-fuente" data-i18n="lbl_fuente">Fuente de emision</label>
               <select id="con-fuente" required><option value="">Cargando...</option></select>
             </div>
             <div class="form-field">
-              <label for="con-cantidad">Cantidad</label>
+              <label for="con-cantidad" data-i18n="lbl_cantidad">Cantidad</label>
               <input type="number" id="con-cantidad" required step="0.01" min="0" placeholder="Ej: 15000">
             </div>
             <div class="form-row">
               <div class="form-field">
-                <label for="con-periodo">Periodo</label>
+                <label for="con-periodo" data-i18n="lbl_periodo">Periodo</label>
                 <select id="con-periodo" required>
                   <option value="">Seleccionar...</option>
                   <option value="mensual">Mensual</option>
@@ -823,12 +855,12 @@
                 </select>
               </div>
               <div class="form-field">
-                <label for="con-fecha">Fecha de registro</label>
+                <label for="con-fecha" data-i18n="lbl_fecha">Fecha de registro</label>
                 <input type="date" id="con-fecha" required>
               </div>
             </div>
             <div id="emision-preview" class="emision-preview" style="display:none;"></div>
-            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">Registrar consumo</button>
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;" data-i18n="btn_registrar_consumo">Registrar consumo</button>
           </form>
           <div id="msg-consumo" style="margin-top:0.85rem;"></div>
         </div>
@@ -842,17 +874,191 @@
 
   <script>
     const API = '';
+    let currentLang = 'es';
 
-    // Iconografia textual derivada del contenido de cada consulta (sin emojis)
-    const CATEGORIAS = {
-      emisiones_por_empresa: 'Por empresa',
-      top_sectores:          'Por sector',
-      emisiones_por_scope:   'Por scope',
-      consumos_recientes:    'Registro',
-      empresas_por_pais:     'Geografia',
-      fuentes_emision:       'Catalogo'
+    // =============================================
+    // Traducciones
+    // =============================================
+    const T = {
+      es: {
+        title: 'Calculadora de Huella de Carbono',
+        subtitle: 'Consola de medicion · kg CO₂e',
+        tab_predefinidas: 'Consultas predefinidas',
+        tab_sql: 'SQL libre',
+        tab_historial: 'Historial',
+        tab_agregar: 'Agregar datos',
+        intro_predefinidas: 'Selecciona un modulo para ejecutarlo sobre MySQL',
+        intro_sql: 'Escribe una consulta para ejecutarla directamente',
+        intro_historial: 'Registro de consultas en MongoDB',
+        console_bar: 'consola sql · solo lectura',
+        btn_ejecutar: 'Ejecutar',
+        btn_limpiar: 'Limpiar',
+        btn_actualizar: 'Actualizar',
+        form_empresa_title: 'Registrar empresa',
+        form_empresa_desc: 'Inserta en tabla empresa con FK a sector y pais',
+        form_consumo_title: 'Registrar consumo',
+        form_consumo_desc: 'Inserta en consumo + calcula emision automaticamente',
+        lbl_emp_nombre: 'Nombre de la empresa',
+        lbl_tamano: 'Tamano',
+        lbl_sector: 'Sector',
+        lbl_pais: 'Pais',
+        lbl_empresa: 'Empresa',
+        lbl_fuente: 'Fuente de emision',
+        lbl_cantidad: 'Cantidad',
+        lbl_periodo: 'Periodo',
+        lbl_fecha: 'Fecha de registro',
+        btn_registrar_empresa: 'Registrar empresa',
+        btn_registrar_consumo: 'Registrar consumo',
+        placeholder_sql: 'SELECT * FROM empresa LIMIT 10;',
+        placeholder_empresa: 'Ej: EcoTransporte SA',
+        placeholder_cantidad: 'Ej: 15000',
+        opt_seleccionar: 'Seleccionar...',
+        opt_cargando: 'Cargando...',
+        opt_micro: 'Micro', opt_pequena: 'Pequena', opt_mediana: 'Mediana', opt_grande: 'Grande',
+        opt_mensual: 'Mensual', opt_trimestral: 'Trimestral', opt_anual: 'Anual',
+        status_verificando: 'verificando...',
+        status_conectado: 'conectado',
+        status_error: 'error',
+        status_sin_conexion: 'sin conexion',
+        loading_consultas: 'Cargando consultas...',
+        loading_ejecutando: 'Ejecutando consulta...',
+        loading_ejecutando_corto: 'Ejecutando...',
+        loading_historial: 'Cargando historial...',
+        loading_registrando: 'Registrando...',
+        resultado_libre: 'Resultado SQL libre',
+        filas: 'filas',
+        fila: 'fila',
+        sin_resultados: 'Sin resultados',
+        sin_consultas: 'No hay consultas registradas aun',
+        error_cargando: 'Error cargando consultas: ',
+        error_historial: 'Error cargando historial: ',
+        error_prefix: 'Error: ',
+        empresa_registrada: 'Empresa registrada (ID: ',
+        consumo_registrado: 'Consumo registrado — Emision calculada: ',
+        ejecutar_hover: 'Ejecutar',
+        cat_empresa: 'Por empresa', cat_sector: 'Por sector', cat_scope: 'Por scope',
+        cat_registro: 'Registro', cat_geografia: 'Geografia', cat_catalogo: 'Catalogo', cat_default: 'Consulta',
+        footer: 'POC Huella de Carbono / TICS320 / ODS 13.2.2 / MySQL + MongoDB + Node.js'
+      },
+      en: {
+        title: 'Carbon Footprint Calculator',
+        subtitle: 'Measurement console · kg CO₂e',
+        tab_predefinidas: 'Predefined queries',
+        tab_sql: 'Free SQL',
+        tab_historial: 'History',
+        tab_agregar: 'Add data',
+        intro_predefinidas: 'Select a module to run on MySQL',
+        intro_sql: 'Write a query to execute directly',
+        intro_historial: 'Query log stored in MongoDB',
+        console_bar: 'sql console · read only',
+        btn_ejecutar: 'Execute',
+        btn_limpiar: 'Clear',
+        btn_actualizar: 'Refresh',
+        form_empresa_title: 'Register company',
+        form_empresa_desc: 'Inserts into company table with FK to sector and country',
+        form_consumo_title: 'Register consumption',
+        form_consumo_desc: 'Inserts into consumption + calculates emission automatically',
+        lbl_emp_nombre: 'Company name',
+        lbl_tamano: 'Size',
+        lbl_sector: 'Sector',
+        lbl_pais: 'Country',
+        lbl_empresa: 'Company',
+        lbl_fuente: 'Emission source',
+        lbl_cantidad: 'Amount',
+        lbl_periodo: 'Period',
+        lbl_fecha: 'Registration date',
+        btn_registrar_empresa: 'Register company',
+        btn_registrar_consumo: 'Register consumption',
+        placeholder_sql: 'SELECT * FROM empresa LIMIT 10;',
+        placeholder_empresa: 'E.g.: EcoTransport Inc',
+        placeholder_cantidad: 'E.g.: 15000',
+        opt_seleccionar: 'Select...',
+        opt_cargando: 'Loading...',
+        opt_micro: 'Micro', opt_pequena: 'Small', opt_mediana: 'Medium', opt_grande: 'Large',
+        opt_mensual: 'Monthly', opt_trimestral: 'Quarterly', opt_anual: 'Annual',
+        status_verificando: 'checking...',
+        status_conectado: 'connected',
+        status_error: 'error',
+        status_sin_conexion: 'no connection',
+        loading_consultas: 'Loading queries...',
+        loading_ejecutando: 'Running query...',
+        loading_ejecutando_corto: 'Running...',
+        loading_historial: 'Loading history...',
+        loading_registrando: 'Registering...',
+        resultado_libre: 'Free SQL result',
+        filas: 'rows',
+        fila: 'row',
+        sin_resultados: 'No results',
+        sin_consultas: 'No queries recorded yet',
+        error_cargando: 'Error loading queries: ',
+        error_historial: 'Error loading history: ',
+        error_prefix: 'Error: ',
+        empresa_registrada: 'Company registered (ID: ',
+        consumo_registrado: 'Consumption registered — Calculated emission: ',
+        ejecutar_hover: 'Execute',
+        cat_empresa: 'By company', cat_sector: 'By sector', cat_scope: 'By scope',
+        cat_registro: 'Records', cat_geografia: 'Geography', cat_catalogo: 'Catalog', cat_default: 'Query',
+        footer: 'POC Carbon Footprint / TICS320 / SDG 13.2.2 / MySQL + MongoDB + Node.js'
+      }
     };
-    function categoria(id) { return CATEGORIAS[id] || 'Consulta'; }
+
+    function t(key) { return T[currentLang][key] || T.es[key] || key; }
+
+    const CATEGORIAS_MAP = {
+      emisiones_por_empresa: 'cat_empresa',
+      top_sectores:          'cat_sector',
+      emisiones_por_scope:   'cat_scope',
+      consumos_recientes:    'cat_registro',
+      empresas_por_pais:     'cat_geografia',
+      fuentes_emision:       'cat_catalogo'
+    };
+    function categoria(id) { return t(CATEGORIAS_MAP[id] || 'cat_default'); }
+
+    // =============================================
+    // Language switcher
+    // =============================================
+    function setLang(lang) {
+      currentLang = lang;
+      document.documentElement.lang = lang;
+      document.getElementById('lang-es').classList.toggle('active', lang === 'es');
+      document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+
+      // Update all static elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+      });
+
+      // Update placeholders
+      document.getElementById('sql-input').placeholder = t('placeholder_sql');
+      document.getElementById('emp-nombre').placeholder = t('placeholder_empresa');
+      document.getElementById('con-cantidad').placeholder = t('placeholder_cantidad');
+
+      // Update select options for tamano
+      const tamanoSel = document.getElementById('emp-tamano');
+      const tamanoVal = tamanoSel.value;
+      tamanoSel.innerHTML = '<option value="">' + t('opt_seleccionar') + '</option>' +
+        '<option value="micro">' + t('opt_micro') + '</option>' +
+        '<option value="pequena">' + t('opt_pequena') + '</option>' +
+        '<option value="mediana">' + t('opt_mediana') + '</option>' +
+        '<option value="grande">' + t('opt_grande') + '</option>';
+      tamanoSel.value = tamanoVal;
+
+      // Update select options for periodo
+      const periodoSel = document.getElementById('con-periodo');
+      const periodoVal = periodoSel.value;
+      periodoSel.innerHTML = '<option value="">' + t('opt_seleccionar') + '</option>' +
+        '<option value="mensual">' + t('opt_mensual') + '</option>' +
+        '<option value="trimestral">' + t('opt_trimestral') + '</option>' +
+        '<option value="anual">' + t('opt_anual') + '</option>';
+      periodoSel.value = periodoVal;
+
+      // Update footer
+      document.querySelector('footer').innerHTML = t('footer');
+
+      // Re-render dynamic content
+      cargarConsultas();
+      checkStatus();
+    }
 
     // =============================================
     // Tabs
@@ -880,15 +1086,15 @@
         const mysqlBadge = document.getElementById('mysql-status');
         const mongoBadge = document.getElementById('mongo-status');
 
-        mysqlBadge.textContent = 'MySQL: ' + (data.mysql ? 'conectado' : 'error');
+        mysqlBadge.textContent = 'MySQL: ' + (data.mysql ? t('status_conectado') : t('status_error'));
         mysqlBadge.className = 'badge ' + (data.mysql ? 'ok' : 'error');
 
-        mongoBadge.textContent = 'MongoDB: ' + (data.mongodb ? 'conectado' : 'error');
+        mongoBadge.textContent = 'MongoDB: ' + (data.mongodb ? t('status_conectado') : t('status_error'));
         mongoBadge.className = 'badge ' + (data.mongodb ? 'ok' : 'error');
       } catch (e) {
-        document.getElementById('mysql-status').textContent = 'MySQL: sin conexion';
+        document.getElementById('mysql-status').textContent = 'MySQL: ' + t('status_sin_conexion');
         document.getElementById('mysql-status').className = 'badge error';
-        document.getElementById('mongo-status').textContent = 'MongoDB: sin conexion';
+        document.getElementById('mongo-status').textContent = 'MongoDB: ' + t('status_sin_conexion');
         document.getElementById('mongo-status').className = 'badge error';
       }
     }
@@ -906,19 +1112,19 @@
                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ejecutarPredefinida('${c.id}')}">
             <span class="query-tag">${escapeHtml(categoria(c.id))}</span>
             <div class="query-name">${escapeHtml(c.nombre)}</div>
-            <div class="query-run">Ejecutar</div>
+            <div class="query-run">${escapeHtml(t('ejecutar_hover'))}</div>
           </div>
         `).join('');
       } catch (e) {
         document.getElementById('query-grid').innerHTML =
-          '<div class="error-msg">Error cargando consultas: ' + escapeHtml(e.message) + '</div>';
+          '<div class="error-msg">' + t('error_cargando') + escapeHtml(e.message) + '</div>';
       }
     }
 
     async function ejecutarPredefinida(id) {
       const section = document.getElementById('results-predefinidas');
       section.style.display = 'block';
-      section.innerHTML = '<div class="loading"><span class="spinner"></span> Ejecutando consulta...</div>';
+      section.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading_ejecutando') + '</div>';
 
       try {
         const res = await fetch(API + '/api/consultas/' + id);
@@ -927,7 +1133,7 @@
         mostrarResultados(section, data.nombre, data.sql, data.datos);
         section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
-        section.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(e.message) + '</div>';
+        section.innerHTML = '<div class="error-msg">' + t('error_prefix') + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -941,7 +1147,7 @@
       const section = document.getElementById('results-sql');
       const btn = document.getElementById('btn-ejecutar');
       section.style.display = 'block';
-      section.innerHTML = '<div class="loading"><span class="spinner"></span> Ejecutando...</div>';
+      section.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading_ejecutando_corto') + '</div>';
       btn.disabled = true;
 
       try {
@@ -952,9 +1158,9 @@
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-        mostrarResultados(section, 'Resultado SQL libre', sql, data.datos);
+        mostrarResultados(section, t('resultado_libre'), sql, data.datos);
       } catch (e) {
-        section.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(e.message) + '</div>';
+        section.innerHTML = '<div class="error-msg">' + t('error_prefix') + escapeHtml(e.message) + '</div>';
       } finally {
         btn.disabled = false;
       }
@@ -985,10 +1191,10 @@
         container.innerHTML = `
           <div class="results-header">
             <h3>${escapeHtml(titulo)}</h3>
-            <span class="results-meta">0 filas</span>
+            <span class="results-meta">0 ${t('filas')}</span>
           </div>
           <div class="results-sql">${escapeHtml(sql)}</div>
-          ${emptyState('Sin resultados')}`;
+          ${emptyState(t('sin_resultados'))}`;
         return;
       }
 
@@ -996,7 +1202,7 @@
       container.innerHTML = `
         <div class="results-header">
           <h3>${escapeHtml(titulo)}</h3>
-          <span class="results-meta">${datos.length} fila${datos.length !== 1 ? 's' : ''}</span>
+          <span class="results-meta">${datos.length} ${datos.length !== 1 ? t('filas') : t('fila')}</span>
         </div>
         <div class="results-sql">${escapeHtml(sql)}</div>
         <div class="table-wrapper">
@@ -1016,31 +1222,32 @@
     // =============================================
     async function cargarHistorial() {
       const list = document.getElementById('historial-list');
-      list.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando historial...</div>';
+      list.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading_historial') + '</div>';
 
       try {
         const res = await fetch(API + '/api/historial');
         const historial = await res.json();
 
         if (historial.length === 0) {
-          list.innerHTML = emptyState('No hay consultas registradas aun');
+          list.innerHTML = emptyState(t('sin_consultas'));
           return;
         }
 
+        const locale = currentLang === 'en' ? 'en-US' : 'es-CL';
         list.innerHTML = historial.map(h => `
           <div class="historial-item">
             <span class="tipo ${h.tipo}">${escapeHtml(h.tipo)}</span>
             <div class="historial-sql">${escapeHtml(h.consulta.substring(0, 150))}${h.consulta.length > 150 ? '...' : ''}</div>
             <div class="historial-side">
-              <div class="historial-fecha">${escapeHtml(new Date(h.fecha).toLocaleString('es-CL'))}</div>
+              <div class="historial-fecha">${escapeHtml(new Date(h.fecha).toLocaleString(locale))}</div>
               ${h.error
-                ? '<div class="historial-error">Error</div>'
-                : '<div class="historial-rows">' + escapeHtml(String(h.resultados)) + ' filas</div>'}
+                ? '<div class="historial-error">' + t('status_error') + '</div>'
+                : '<div class="historial-rows">' + escapeHtml(String(h.resultados)) + ' ' + t('filas') + '</div>'}
             </div>
           </div>
         `).join('');
       } catch (e) {
-        list.innerHTML = '<div class="error-msg">Error cargando historial: ' + escapeHtml(e.message) + '</div>';
+        list.innerHTML = '<div class="error-msg">' + t('error_historial') + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -1101,7 +1308,7 @@
 
     function poblarSelect(id, opciones) {
       const sel = document.getElementById(id);
-      sel.innerHTML = '<option value="">Seleccionar...</option>' +
+      sel.innerHTML = '<option value="">' + t('opt_seleccionar') + '</option>' +
         opciones.map(o => '<option value="' + o.value + '">' + escapeHtml(o.text) + '</option>').join('');
     }
 
@@ -1127,7 +1334,7 @@
     async function registrarEmpresa(e) {
       e.preventDefault();
       const msg = document.getElementById('msg-empresa');
-      msg.innerHTML = '<div class="loading"><span class="spinner"></span> Registrando...</div>';
+      msg.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading_registrando') + '</div>';
 
       try {
         const res = await fetch(API + '/api/empresas', {
@@ -1142,20 +1349,19 @@
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-        msg.innerHTML = '<div class="success-msg">Empresa registrada (ID: ' + data.id + ')</div>';
+        msg.innerHTML = '<div class="success-msg">' + t('empresa_registrada') + data.id + ')</div>';
         document.getElementById('form-empresa').reset();
-        // Refrescar dropdown de empresas en formulario de consumo
         catalogosCargados = false;
         cargarCatalogos();
       } catch (err) {
-        msg.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(err.message) + '</div>';
+        msg.innerHTML = '<div class="error-msg">' + t('error_prefix') + escapeHtml(err.message) + '</div>';
       }
     }
 
     async function registrarConsumo(e) {
       e.preventDefault();
       const msg = document.getElementById('msg-consumo');
-      msg.innerHTML = '<div class="loading"><span class="spinner"></span> Registrando...</div>';
+      msg.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading_registrando') + '</div>';
 
       try {
         const res = await fetch(API + '/api/consumos', {
@@ -1171,13 +1377,14 @@
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-        msg.innerHTML = '<div class="success-msg">Consumo registrado — Emision calculada: ' +
-          parseFloat(data.emision_total_kg).toLocaleString('es-CL', { maximumFractionDigits: 2 }) + ' kg CO2eq</div>';
+        const locale = currentLang === 'en' ? 'en-US' : 'es-CL';
+        msg.innerHTML = '<div class="success-msg">' + t('consumo_registrado') +
+          parseFloat(data.emision_total_kg).toLocaleString(locale, { maximumFractionDigits: 2 }) + ' kg CO2eq</div>';
         document.getElementById('form-consumo').reset();
         document.getElementById('con-fecha').value = new Date().toISOString().split('T')[0];
         document.getElementById('emision-preview').style.display = 'none';
       } catch (err) {
-        msg.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(err.message) + '</div>';
+        msg.innerHTML = '<div class="error-msg">' + t('error_prefix') + escapeHtml(err.message) + '</div>';
       }
     }
 
