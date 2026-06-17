@@ -3,391 +3,646 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Huella de Carbono - POC</title>
+  <title>Huella de Carbono — Consola de medición</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --verde-oscuro: #1a4d2e;
-      --verde-medio: #2d7a4f;
-      --verde-claro: #4caf50;
-      --verde-fondo: #e8f5e9;
-      --verde-borde: #a5d6a7;
-      --gris-texto: #333;
-      --gris-claro: #f5f5f5;
-      --blanco: #fff;
-      --rojo: #e53935;
-      --amarillo: #fff3cd;
+      --ink:     #0E2A1C;
+      --forest:  #143A28;
+      --forest-2:#0E2E1F;
+      --moss:    #2C6E49;
+      --jade:    #40916C;
+      --signal:  #57CC99;
+      --bg:      #E9F0EA;
+      --surface: #FCFEFC;
+      --lichen:  #DCE8DF;
+      --line:    #C9DBCF;
+      --muted:   #5A6F62;
+      --error:   #B23A2E;
+      --error-bg:#FBEAE7;
+      --warn:    #9A6B16;
+      --warn-bg: #F6EED9;
+
+      --mono: 'JetBrains Mono', 'Consolas', monospace;
+      --display: 'Space Grotesk', system-ui, sans-serif;
+
+      --r: 4px;
+      --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--verde-fondo);
-      color: var(--gris-texto);
+      font-family: var(--display);
+      background:
+        radial-gradient(1200px 600px at 100% -10%, #F2F7F2 0%, transparent 60%),
+        var(--bg);
+      color: var(--ink);
       min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Header */
+    /* ========== Header / measurement station ========== */
     header {
-      background: linear-gradient(135deg, var(--verde-oscuro), var(--verde-medio));
-      color: var(--blanco);
-      padding: 1.5rem 2rem;
+      background: linear-gradient(160deg, var(--forest) 0%, var(--forest-2) 100%);
+      color: #EAF4ED;
+      border-bottom: 1px solid #0A2417;
+      position: relative;
+      overflow: hidden;
+    }
+    /* faint baseline grid — instrument panel texture */
+    header::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 100% 28px;
+      pointer-events: none;
+    }
+    .header-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 1.4rem 1.75rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      position: relative;
+      animation: rise 0.7s var(--ease) both;
     }
 
-    header h1 {
-      font-size: 1.5rem;
+    .brand { display: flex; align-items: center; gap: 0.9rem; }
+    .brand-mark {
+      width: 42px; height: 42px;
+      flex-shrink: 0;
+      color: var(--signal);
+    }
+    .brand-mark svg { width: 100%; height: 100%; display: block; }
+    .brand-text h1 {
+      font-size: 1.18rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+    }
+    .brand-text .sub {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: #8FB6A0;
+      margin-top: 0.25rem;
+      text-transform: uppercase;
+    }
+
+    /* Telemetry strip — the signature element */
+    .telemetry {
+      display: flex;
+      gap: 0.6rem;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--r);
+      padding: 0.5rem;
+    }
+    .badge {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-    }
-
-    .status-badges {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .badge {
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .badge.ok { background: var(--verde-claro); color: var(--blanco); }
-    .badge.error { background: var(--rojo); color: var(--blanco); }
-    .badge.loading { background: var(--amarillo); color: #856404; }
-
-    /* Main */
-    main {
-      max-width: 1100px;
-      margin: 2rem auto;
-      padding: 0 1.5rem;
-    }
-
-    /* Tabs */
-    .tabs {
-      display: flex;
-      gap: 0;
-      margin-bottom: 0;
-    }
-
-    .tab {
-      padding: 0.75rem 1.5rem;
-      background: var(--blanco);
-      border: 1px solid var(--verde-borde);
-      border-bottom: none;
-      cursor: pointer;
-      font-size: 0.9rem;
+      padding: 0.4rem 0.7rem 0.4rem 0.6rem;
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
       font-weight: 500;
-      color: var(--verde-medio);
-      border-radius: 8px 8px 0 0;
-      transition: background 0.2s;
+      letter-spacing: 0.02em;
+      color: #C4DBCC;
+      background: rgba(255,255,255,0.03);
+      white-space: nowrap;
+      transition: color 0.3s, background 0.3s;
+    }
+    .badge::before {
+      content: "";
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #6b7d72;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 0 rgba(0,0,0,0);
+    }
+    .badge.ok { color: #DFF6E8; }
+    .badge.ok::before {
+      background: var(--signal);
+      box-shadow: 0 0 8px var(--signal);
+      animation: pulse 2s var(--ease) infinite;
+    }
+    .badge.error { color: #F2C7C1; }
+    .badge.error::before { background: var(--error); box-shadow: 0 0 7px rgba(178,58,46,.7); }
+    .badge.loading::before { background: var(--warn); animation: pulse 1.1s var(--ease) infinite; }
+
+    /* ========== Main ========== */
+    main {
+      max-width: 1180px;
+      margin: 2.25rem auto;
+      padding: 0 1.75rem;
+      animation: rise 0.7s 0.08s var(--ease) both;
     }
 
+    /* Segmented instrument tabs */
+    .tabs {
+      display: inline-flex;
+      gap: 2px;
+      padding: 4px;
+      background: var(--lichen);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    .tab {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--moss);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      padding: 0.55rem 1.1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.25s var(--ease), color 0.25s var(--ease), box-shadow 0.25s;
+    }
+    .tab:hover:not(.active) { background: rgba(255,255,255,0.6); }
     .tab.active {
-      background: var(--verde-oscuro);
-      color: var(--blanco);
-      border-color: var(--verde-oscuro);
-    }
-
-    .tab:hover:not(.active) {
-      background: var(--verde-fondo);
+      background: var(--forest);
+      color: #EAF4ED;
+      box-shadow: 0 2px 6px rgba(20,58,40,0.25);
     }
 
     /* Panels */
     .panel {
-      background: var(--blanco);
-      border: 1px solid var(--verde-borde);
-      border-radius: 0 8px 8px 8px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
       padding: 1.5rem;
       display: none;
     }
-
-    .panel.active { display: block; }
-
-    /* Consultas predefinidas */
-    .query-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
+    .panel.active {
+      display: block;
+      animation: reveal 0.45s var(--ease) both;
     }
 
-    .query-card {
-      border: 1px solid var(--verde-borde);
-      border-radius: 8px;
-      padding: 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
+    .panel-intro {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 1.1rem;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
     }
-
-    .query-card:hover {
-      border-color: var(--verde-claro);
-      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
-      transform: translateY(-1px);
+    .panel-intro::before {
+      content: "";
+      width: 14px; height: 1px;
+      background: var(--jade);
     }
-
-    .query-card .icon {
-      width: 40px;
-      height: 40px;
-      background: var(--verde-fondo);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      flex-shrink: 0;
-    }
-
-    .query-card .name {
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-
-    /* SQL libre */
-    .sql-editor {
-      width: 100%;
-      min-height: 120px;
-      font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 0.9rem;
-      padding: 1rem;
-      border: 1px solid var(--verde-borde);
-      border-radius: 8px;
-      resize: vertical;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .sql-editor:focus {
-      border-color: var(--verde-claro);
-      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
-    }
-
-    .sql-actions {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: 0.75rem;
-      align-items: center;
-    }
-
-    .btn {
-      padding: 0.6rem 1.25rem;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: var(--verde-medio);
-      color: var(--blanco);
-    }
-
-    .btn-primary:hover { background: var(--verde-oscuro); }
-
-    .btn-secondary {
-      background: var(--gris-claro);
-      color: var(--gris-texto);
-      border: 1px solid #ddd;
-    }
-
-    .btn-secondary:hover { background: #e0e0e0; }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .sql-warning {
-      font-size: 0.8rem;
-      color: #888;
-      margin-left: auto;
-    }
-
-    /* Resultados */
-    .results-section {
-      margin-top: 1.5rem;
-    }
-
-    .results-header {
+    .panel-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.75rem;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+      flex-wrap: wrap;
     }
 
-    .results-header h3 {
-      font-size: 1rem;
-      color: var(--verde-oscuro);
+    /* ========== Query catalog ========== */
+    .query-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 0.85rem;
     }
-
-    .results-meta {
-      font-size: 0.8rem;
-      color: #888;
-    }
-
-    .results-sql {
-      background: #f8f8f8;
-      border: 1px solid #e0e0e0;
+    .query-card {
+      position: relative;
+      border: 1px solid var(--line);
       border-radius: 6px;
-      padding: 0.75rem;
-      font-family: 'Consolas', monospace;
-      font-size: 0.8rem;
-      margin-bottom: 1rem;
+      padding: 1rem 1.05rem;
+      cursor: pointer;
+      background: var(--surface);
+      transition: border-color 0.25s var(--ease), transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+      overflow: hidden;
+    }
+    .query-card::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--signal);
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: transform 0.3s var(--ease);
+    }
+    .query-card:hover {
+      border-color: var(--jade);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(20,58,40,0.10);
+    }
+    .query-card:hover::before { transform: scaleY(1); }
+    .query-tag {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--jade);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 0.45rem;
+    }
+    .query-name {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.3;
+    }
+    .query-run {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      color: var(--muted);
+      margin-top: 0.7rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .query-card:hover .query-run { opacity: 1; transform: translateX(0); }
+    .query-run::after { content: "\2192"; }
+
+    /* ========== SQL console ========== */
+    .console {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #0E2418;
+    }
+    .console-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.55rem 0.85rem;
+      background: var(--forest-2);
+      border-bottom: 1px solid #0A2417;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+      color: #7FA890;
+      text-transform: uppercase;
+    }
+    .console-bar .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--signal);
+      box-shadow: 0 0 6px var(--signal);
+    }
+    .sql-editor {
+      display: block;
+      width: 100%;
+      min-height: 150px;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      line-height: 1.6;
+      padding: 1rem;
+      border: none;
+      background: #0E2418;
+      color: #DCEFE2;
+      resize: vertical;
+      outline: none;
+      caret-color: var(--signal);
+      tab-size: 2;
+    }
+    .sql-editor::placeholder { color: #4D6B58; }
+    .sql-editor:focus { box-shadow: inset 0 0 0 1px rgba(87,204,153,0.4); }
+
+    .sql-actions {
+      display: flex;
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      appearance: none;
+      font-family: var(--mono);
+      padding: 0.6rem 1.2rem;
+      border: 1px solid transparent;
+      border-radius: var(--r);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 0.2s var(--ease), border-color 0.2s, transform 0.08s, box-shadow 0.2s;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--moss);
+      color: #F2FBF5;
+      box-shadow: 0 2px 8px rgba(44,110,73,0.3);
+    }
+    .btn-primary:hover { background: #235a3b; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--moss);
+      border-color: var(--line);
+    }
+    .btn-secondary:hover { background: var(--lichen); border-color: var(--jade); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .sql-warning {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .kbd {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      padding: 0.12rem 0.4rem;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 3px;
+      background: var(--surface);
+      color: var(--moss);
+    }
+
+    /* ========== Results ========== */
+    .results-section { margin-top: 1.6rem; }
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 0.7rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+    .results-header h3 {
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .results-meta {
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--moss);
+      background: var(--lichen);
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .results-sql {
+      background: #0E2418;
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      line-height: 1.55;
+      margin-bottom: 1.1rem;
       overflow-x: auto;
-      color: #555;
+      color: #9FD3B4;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     .table-wrapper {
       overflow-x: auto;
-      border-radius: 8px;
-      border: 1px solid var(--verde-borde);
+      border-radius: 6px;
+      border: 1px solid var(--line);
     }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-
-    th {
-      background: var(--verde-oscuro);
-      color: var(--blanco);
-      padding: 0.6rem 0.75rem;
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    thead th {
+      position: sticky; top: 0;
+      background: var(--forest);
+      color: #DCEFE2;
+      padding: 0.65rem 0.85rem;
       text-align: left;
+      font-family: var(--mono);
       font-weight: 500;
+      font-size: 0.72rem;
+      letter-spacing: 0.03em;
       white-space: nowrap;
+      text-transform: uppercase;
     }
-
-    td {
-      padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid #eee;
+    tbody td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid #EAF1EC;
+      color: var(--ink);
     }
+    tbody td.num {
+      font-family: var(--mono);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--moss);
+    }
+    tbody tr { transition: background 0.12s; }
+    tbody tr:nth-child(even) { background: #F6FAF7; }
+    tbody tr:hover { background: var(--lichen); }
+    tbody tr:last-child td { border-bottom: none; }
 
-    tr:nth-child(even) { background: #fafafa; }
-    tr:hover { background: var(--verde-fondo); }
-
-    /* Historial */
+    /* ========== Historial ========== */
     .historial-item {
-      border: 1px solid #e0e0e0;
-      border-radius: 6px;
-      padding: 0.75rem 1rem;
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--line);
+      border-radius: 5px;
+      padding: 0.8rem 1rem;
+      margin-bottom: 0.55rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
       gap: 1rem;
+      align-items: start;
+      background: var(--surface);
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
     }
-
-    .historial-item .tipo {
-      font-size: 0.7rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 10px;
+    .historial-item:hover {
+      border-left-color: var(--jade);
+      box-shadow: 0 3px 12px rgba(20,58,40,0.07);
+    }
+    .tipo {
+      font-family: var(--mono);
+      font-size: 0.62rem;
       font-weight: 600;
+      letter-spacing: 0.06em;
+      padding: 0.25rem 0.55rem;
+      border-radius: 3px;
+      text-transform: uppercase;
       white-space: nowrap;
     }
-
-    .tipo.predefinida { background: #e3f2fd; color: #1565c0; }
-    .tipo.libre { background: #fff3e0; color: #e65100; }
-
+    .tipo.predefinida { background: var(--lichen); color: var(--moss); }
+    .tipo.libre { background: #F6EED9; color: var(--warn); }
     .historial-sql {
-      font-family: monospace;
-      font-size: 0.8rem;
-      color: #555;
-      word-break: break-all;
-      flex: 1;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--ink);
+      word-break: break-word;
+      line-height: 1.5;
     }
-
+    .historial-side { text-align: right; }
     .historial-fecha {
-      font-size: 0.75rem;
-      color: #999;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
       white-space: nowrap;
     }
-
+    .historial-rows {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--moss);
+      margin-top: 0.2rem;
+    }
     .historial-error {
-      color: var(--rojo);
-      font-size: 0.8rem;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--error);
+      margin-top: 0.2rem;
     }
 
-    /* Error message */
+    /* ========== Feedback states ========== */
     .error-msg {
-      background: #ffebee;
-      border: 1px solid #ef9a9a;
-      color: var(--rojo);
-      padding: 0.75rem;
-      border-radius: 6px;
-      font-size: 0.9rem;
+      background: var(--error-bg);
+      border: 1px solid #E6B4AC;
+      border-left: 3px solid var(--error);
+      color: var(--error);
+      padding: 0.85rem 1rem;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      word-break: break-word;
     }
-
-    /* Loading */
     .loading {
-      text-align: center;
-      padding: 2rem;
-      color: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 2.5rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--muted);
     }
-
     .spinner {
-      display: inline-block;
-      width: 24px;
-      height: 24px;
-      border: 3px solid var(--verde-borde);
-      border-top-color: var(--verde-claro);
+      width: 18px; height: 18px;
+      border: 2px solid var(--line);
+      border-top-color: var(--moss);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 0.5rem;
-      vertical-align: middle;
+      animation: spin 0.7s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Empty state */
     .empty {
       text-align: center;
-      padding: 3rem;
-      color: #aaa;
+      padding: 3rem 1rem;
+      color: var(--muted);
     }
+    .empty svg { width: 34px; height: 34px; color: var(--line); margin-bottom: 0.75rem; }
+    .empty p { font-family: var(--mono); font-size: 0.8rem; }
 
-    .empty .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-
-    /* Footer */
+    /* ========== Footer ========== */
     footer {
       text-align: center;
-      padding: 1.5rem;
-      color: #999;
-      font-size: 0.8rem;
-      margin-top: 2rem;
+      padding: 2rem 1.5rem 2.5rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+    }
+    footer .sep { color: var(--line); margin: 0 0.5rem; }
+
+    /* ========== Motion keyframes ========== */
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(87,204,153,0.5); }
+      50% { box-shadow: 0 0 0 5px rgba(87,204,153,0); }
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========== Accessibility ========== */
+    :focus-visible {
+      outline: 2px solid var(--signal);
+      outline-offset: 2px;
+      border-radius: 3px;
+    }
+
+    @media (max-width: 640px) {
+      .header-inner { padding: 1.1rem 1.1rem; }
+      main { padding: 0 1.1rem; margin: 1.5rem auto; }
+      .panel { padding: 1.1rem; }
+      .telemetry { width: 100%; }
+      .badge { flex: 1; justify-content: center; }
+      .historial-item { grid-template-columns: 1fr; gap: 0.5rem; }
+      .historial-side { text-align: left; }
+      .sql-warning { margin-left: 0; width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
     }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>&#127793; Calculadora Huella de Carbono</h1>
-    <div class="status-badges">
-      <span class="badge loading" id="mysql-status">MySQL: verificando...</span>
-      <span class="badge loading" id="mongo-status">MongoDB: verificando...</span>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 44 44" fill="none">
+            <path d="M22 4 L36 12 V28 L22 36 L8 28 V12 Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M22 13 L29 17 V25 L22 29 L15 25 V17 Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" opacity="0.55"/>
+            <circle cx="22" cy="21" r="2.4" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Calculadora de Huella de Carbono</h1>
+          <div class="sub">Consola de medición &middot; kg CO&#8322;e</div>
+        </div>
+      </div>
+      <div class="telemetry" role="status" aria-live="polite">
+        <span class="badge loading" id="mysql-status">MySQL: verificando...</span>
+        <span class="badge loading" id="mongo-status">MongoDB: verificando...</span>
+      </div>
     </div>
   </header>
 
   <main>
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('predefinidas')">&#128202; Consultas predefinidas</div>
-      <div class="tab" onclick="switchTab('sql')">&#128187; SQL libre</div>
-      <div class="tab" onclick="switchTab('historial')">&#128214; Historial</div>
+    <div class="tabs" role="tablist" aria-label="Modos de consulta">
+      <button class="tab active" type="button" role="tab" aria-selected="true" onclick="switchTab('predefinidas')">Consultas predefinidas</button>
+      <button class="tab" type="button" role="tab" onclick="switchTab('sql')">SQL libre</button>
+      <button class="tab" type="button" role="tab" onclick="switchTab('historial')">Historial</button>
     </div>
 
     <!-- Panel: Consultas predefinidas -->
-    <div class="panel active" id="panel-predefinidas">
-      <p style="margin-bottom: 1rem; color: #666;">Selecciona una consulta para ejecutarla sobre la base de datos MySQL:</p>
+    <div class="panel active" id="panel-predefinidas" role="tabpanel">
+      <p class="panel-intro">Selecciona un modulo para ejecutarlo sobre MySQL</p>
       <div class="query-grid" id="query-grid">
         <div class="loading"><span class="spinner"></span> Cargando consultas...</div>
       </div>
@@ -395,22 +650,25 @@
     </div>
 
     <!-- Panel: SQL libre -->
-    <div class="panel" id="panel-sql">
-      <p style="margin-bottom: 0.75rem; color: #666;">Escribe una consulta SQL para ejecutarla directamente:</p>
-      <textarea class="sql-editor" id="sql-input" placeholder="SELECT * FROM empresa LIMIT 10;"></textarea>
+    <div class="panel" id="panel-sql" role="tabpanel">
+      <p class="panel-intro">Escribe una consulta para ejecutarla directamente</p>
+      <div class="console">
+        <div class="console-bar"><span class="dot"></span> consola sql &middot; solo lectura</div>
+        <textarea class="sql-editor" id="sql-input" spellcheck="false" placeholder="SELECT * FROM empresa LIMIT 10;"></textarea>
+      </div>
       <div class="sql-actions">
-        <button class="btn btn-primary" id="btn-ejecutar" onclick="ejecutarSQL()">&#9654; Ejecutar</button>
+        <button class="btn btn-primary" id="btn-ejecutar" onclick="ejecutarSQL()">Ejecutar</button>
         <button class="btn btn-secondary" onclick="limpiarSQL()">Limpiar</button>
-        <span class="sql-warning">Solo se permiten SELECT, SHOW y DESCRIBE</span>
+        <span class="sql-warning">SELECT &middot; SHOW &middot; DESCRIBE <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span></span>
       </div>
       <div class="results-section" id="results-sql" style="display:none;"></div>
     </div>
 
     <!-- Panel: Historial -->
-    <div class="panel" id="panel-historial">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <p style="color: #666;">Consultas guardadas en MongoDB (JSON):</p>
-        <button class="btn btn-secondary" onclick="cargarHistorial()">&#128260; Actualizar</button>
+    <div class="panel" id="panel-historial" role="tabpanel">
+      <div class="panel-head">
+        <p class="panel-intro" style="margin-bottom:0;">Registro de consultas en MongoDB</p>
+        <button class="btn btn-secondary" onclick="cargarHistorial()">Actualizar</button>
       </div>
       <div id="historial-list">
         <div class="loading"><span class="spinner"></span> Cargando historial...</div>
@@ -419,11 +677,22 @@
   </main>
 
   <footer>
-    POC Huella de Carbono &mdash; TICS320 &mdash; ODS 13.2.2 &mdash; MySQL + MongoDB + Node.js
+    POC Huella de Carbono <span class="sep">/</span> TICS320 <span class="sep">/</span> ODS 13.2.2 <span class="sep">/</span> MySQL + MongoDB + Node.js
   </footer>
 
   <script>
     const API = '';
+
+    // Iconografia textual derivada del contenido de cada consulta (sin emojis)
+    const CATEGORIAS = {
+      emisiones_por_empresa: 'Por empresa',
+      top_sectores:          'Por sector',
+      emisiones_por_scope:   'Por scope',
+      consumos_recientes:    'Registro',
+      empresas_por_pais:     'Geografia',
+      fuentes_emision:       'Catalogo'
+    };
+    function categoria(id) { return CATEGORIAS[id] || 'Consulta'; }
 
     // =============================================
     // Tabs
@@ -433,6 +702,7 @@
         const panels = ['predefinidas', 'sql', 'historial'];
         const isActive = panels[i] === tab;
         t.classList.toggle('active', isActive);
+        t.setAttribute('aria-selected', isActive ? 'true' : 'false');
         document.getElementById('panel-' + panels[i]).classList.toggle('active', isActive);
       });
       if (tab === 'historial') cargarHistorial();
@@ -469,17 +739,18 @@
       try {
         const res = await fetch(API + '/api/consultas');
         const consultas = await res.json();
-        const icons = ['&#127981;', '&#127759;', '&#128200;', '&#128197;', '&#127758;', '&#9889;'];
         const grid = document.getElementById('query-grid');
-        grid.innerHTML = consultas.map((c, i) => `
-          <div class="query-card" onclick="ejecutarPredefinida('${c.id}')">
-            <div class="icon">${icons[i] || '&#128269;'}</div>
-            <div class="name">${c.nombre}</div>
+        grid.innerHTML = consultas.map((c) => `
+          <div class="query-card" onclick="ejecutarPredefinida('${c.id}')" tabindex="0" role="button"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ejecutarPredefinida('${c.id}')}">
+            <span class="query-tag">${escapeHtml(categoria(c.id))}</span>
+            <div class="query-name">${escapeHtml(c.nombre)}</div>
+            <div class="query-run">Ejecutar</div>
           </div>
         `).join('');
       } catch (e) {
         document.getElementById('query-grid').innerHTML =
-          '<div class="error-msg">Error cargando consultas: ' + e.message + '</div>';
+          '<div class="error-msg">Error cargando consultas: ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -493,8 +764,9 @@
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         mostrarResultados(section, data.nombre, data.sql, data.datos);
+        section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
-        section.innerHTML = '<div class="error-msg">Error: ' + e.message + '</div>';
+        section.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -521,7 +793,7 @@
         if (data.error) throw new Error(data.error);
         mostrarResultados(section, 'Resultado SQL libre', sql, data.datos);
       } catch (e) {
-        section.innerHTML = '<div class="error-msg">Error: ' + e.message + '</div>';
+        section.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(e.message) + '</div>';
       } finally {
         btn.disabled = false;
       }
@@ -542,32 +814,38 @@
     // =============================================
     // Mostrar resultados en tabla
     // =============================================
+    function esNumero(v) {
+      return typeof v === 'number' ||
+        (v !== null && v !== '' && !isNaN(v) && !isNaN(parseFloat(v)));
+    }
+
     function mostrarResultados(container, titulo, sql, datos) {
       if (!datos || datos.length === 0) {
         container.innerHTML = `
           <div class="results-header">
-            <h3>${titulo}</h3>
+            <h3>${escapeHtml(titulo)}</h3>
             <span class="results-meta">0 filas</span>
           </div>
           <div class="results-sql">${escapeHtml(sql)}</div>
-          <div class="empty">
-            <div class="icon">&#128196;</div>
-            <p>Sin resultados</p>
-          </div>`;
+          ${emptyState('Sin resultados')}`;
         return;
       }
 
       const cols = Object.keys(datos[0]);
       container.innerHTML = `
         <div class="results-header">
-          <h3>${titulo}</h3>
+          <h3>${escapeHtml(titulo)}</h3>
           <span class="results-meta">${datos.length} fila${datos.length !== 1 ? 's' : ''}</span>
         </div>
         <div class="results-sql">${escapeHtml(sql)}</div>
         <div class="table-wrapper">
           <table>
             <thead><tr>${cols.map(c => '<th>' + escapeHtml(c) + '</th>').join('')}</tr></thead>
-            <tbody>${datos.map(row => '<tr>' + cols.map(c => '<td>' + escapeHtml(String(row[c] ?? '')) + '</td>').join('') + '</tr>').join('')}</tbody>
+            <tbody>${datos.map(row => '<tr>' + cols.map(c => {
+              const val = row[c] ?? '';
+              const cls = esNumero(row[c]) ? ' class="num"' : '';
+              return '<td' + cls + '>' + escapeHtml(String(val)) + '</td>';
+            }).join('') + '</tr>').join('')}</tbody>
           </table>
         </div>`;
     }
@@ -584,28 +862,40 @@
         const historial = await res.json();
 
         if (historial.length === 0) {
-          list.innerHTML = '<div class="empty"><div class="icon">&#128214;</div><p>No hay consultas registradas aun</p></div>';
+          list.innerHTML = emptyState('No hay consultas registradas aun');
           return;
         }
 
         list.innerHTML = historial.map(h => `
           <div class="historial-item">
-            <span class="tipo ${h.tipo}">${h.tipo}</span>
+            <span class="tipo ${h.tipo}">${escapeHtml(h.tipo)}</span>
             <div class="historial-sql">${escapeHtml(h.consulta.substring(0, 150))}${h.consulta.length > 150 ? '...' : ''}</div>
-            <div style="text-align: right;">
-              <div class="historial-fecha">${new Date(h.fecha).toLocaleString('es-CL')}</div>
-              ${h.error ? '<div class="historial-error">Error</div>' : '<div style="font-size:0.75rem;color:#4caf50;">' + h.resultados + ' filas</div>'}
+            <div class="historial-side">
+              <div class="historial-fecha">${escapeHtml(new Date(h.fecha).toLocaleString('es-CL'))}</div>
+              ${h.error
+                ? '<div class="historial-error">Error</div>'
+                : '<div class="historial-rows">' + escapeHtml(String(h.resultados)) + ' filas</div>'}
             </div>
           </div>
         `).join('');
       } catch (e) {
-        list.innerHTML = '<div class="error-msg">Error cargando historial: ' + e.message + '</div>';
+        list.innerHTML = '<div class="error-msg">Error cargando historial: ' + escapeHtml(e.message) + '</div>';
       }
     }
 
     // =============================================
     // Utilidades
     // =============================================
+    function emptyState(msg) {
+      return `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M3 9h18M8 4v16" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <p>${escapeHtml(msg)}</p>
+      </div>`;
+    }
+
     function escapeHtml(str) {
       const div = document.createElement('div');
       div.textContent = str;
