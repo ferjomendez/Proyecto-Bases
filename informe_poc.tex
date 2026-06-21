@@ -1,0 +1,355 @@
+\documentclass[12pt, a4paper]{article}
+% ── Paquetes ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit}
+\usepackage{fancyhdr}
+\usepackage{float}
+% ── Colores ──
+\definecolor{codegreen}{rgb}{0.13,0.55,0.13}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codebg}{rgb}{0.96,0.97,0.96}
+\definecolor{forest}{HTML}{143A28}
+% ── Estilo de código ──
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  commentstyle=\color{codegray},
+  keywordstyle=\color{forest}\bfseries,
+  stringstyle=\color{codegreen},
+  frame=single,
+  rulecolor=\color{codegray!30},
+  numbers=left,
+  numberstyle=\tiny\color{codegray},
+  numbersep=8pt,
+  tabsize=2,
+  showstringspaces=false
+}
+% ── Encabezado ──
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small POC Huella de Carbono}
+\fancyhead[R]{\small TICS320-1-2026}
+\fancyfoot[C]{\thepage}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=forest,
+  urlcolor=forest,
+  citecolor=forest
+}
+% ══════════════════════════════════════════════
+\begin{document}
+% ── Portada ──
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+{\LARGE\bfseries Proof of Concept\\[0.3cm]
+Calculadora de Huella de Carbono\\[0.2cm]
+con Bases de Datos SQL y NoSQL}\\[1.5cm]
+{\large Aplicación Web Full-Stack}\\[0.5cm]
+{\large ODS 13.2.2: Acción por el Clima}\\[2.5cm]
+{\large\bfseries Curso:} Bases de Datos, sección 2\\[0.6cm]
+{\large\bfseries Integrantes:}\\[0.3cm]
+{\large Catalina Andrea Inostroza Burgos}\\[0.15cm]
+{\large Fernando José Méndez Carballo}\\[0.15cm]
+{\large Isidora Belén Rubi Pérez}\\[0.6cm]
+{\large\bfseries Repositorio:} \url{https://github.com/ferjomendez/Proyecto-Bases}\\[0.3cm]
+{\large\bfseries URL en producción:} \url{https://proyecto-bases-production.up.railway.app}\\[2cm]
+{\large Junio 2026}
+\end{titlepage}
+\tableofcontents
+\newpage
+% ══════════════════════════════════════════════
+\section{Introducción}
+Este documento describe el diseño, implementación y despliegue de un \textbf{Proof of Concept (POC)} de una aplicación web que funciona como calculadora de huella de carbono corporativa, alineada con el \textbf{ODS 13.2.2} (Acción por el Clima).
+El objetivo principal es demostrar la integración de dos paradigmas de bases de datos en una misma aplicación:
+\begin{itemize}[nosep]
+  \item \textbf{SQL (MySQL):} almacena el modelo relacional de empresas, sectores, países, fuentes de emisión, consumos y cálculos de emisiones.
+  \item \textbf{NoSQL (MongoDB):} registra un historial de todas las consultas ejecutadas como documentos JSON.
+\end{itemize}
+La aplicación está desplegada en servicios gratuitos en la nube y es accesible públicamente.
+% ══════════════════════════════════════════════
+\section{Arquitectura General}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=2cm and 3.5cm,
+  box/.style={draw, rounded corners, minimum width=3.2cm, minimum height=1.2cm, align=center, font=\small},
+  db/.style={draw, cylinder, shape border rotate=90, minimum width=2.2cm, minimum height=1.4cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=3mm]}, thick},
+  arrbi/.style={{Stealth[length=3mm]}-{Stealth[length=3mm]}, thick}
+]
+  % Nodos principales
+  \node[box, fill=forest!10] (browser) {Navegador Web\\(Frontend)};
+  \node[box, fill=forest!15, right=of browser] (server) {Node.js + Express\\(Backend / API)};
+  \node[db, fill=blue!8, right=3.5cm of server, yshift=1.8cm] (mysql) {MySQL\\(Aiven)};
+  \node[db, fill=green!8, right=3.5cm of server, yshift=-1.8cm] (mongo) {MongoDB\\(Atlas)};
+  \node[box, fill=gray!10, below=2.5cm of server] (github) {GitHub\\(Repositorio)};
+  \node[box, fill=orange!10, below=2.5cm of browser] (railway) {Railway\\(Hosting)};
+  % Flechas
+  \draw[arrbi] (browser) -- node[above, font=\scriptsize]{HTTP/JSON} (server);
+  \draw[arrbi] (server) -- node[above, sloped, font=\scriptsize, pos=0.45]{Consultas SQL} (mysql);
+  \draw[arrbi] (server) -- node[below, sloped, font=\scriptsize, pos=0.45]{Log / Historial JSON} (mongo);
+  \draw[arr] (github) -- node[above, font=\scriptsize]{Auto-deploy} (railway);
+  \draw[arr, dashed] (railway) -- node[left, font=\scriptsize]{Sirve} (browser);
+\end{tikzpicture}
+\caption{Diagrama de arquitectura del POC}
+\end{figure}
+La arquitectura sigue un patrón \textbf{cliente-servidor} donde el backend en Node.js sirve tanto la API REST como los archivos estáticos del frontend. El servidor se conecta simultáneamente a MySQL (alojado en Aiven) y MongoDB (alojado en Atlas). Railway despliega automáticamente desde GitHub.
+% ══════════════════════════════════════════════
+\section{Tecnologías Utilizadas}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Componente} & \textbf{Tecnología} & \textbf{Servicio en la Nube} \\
+\midrule
+Frontend        & HTML, CSS, JavaScript (vanilla) & --- \\
+Backend         & Node.js 24 + Express.js         & Railway \\
+Base de datos SQL   & MySQL 8                     & Aiven (free tier) \\
+Base de datos NoSQL & MongoDB 7                   & MongoDB Atlas (M0 free) \\
+Control de versiones & Git                        & GitHub \\
+Despliegue      & Auto-deploy desde GitHub        & Railway \\
+\bottomrule
+\end{tabular}
+\caption{Stack tecnológico del POC}
+\end{table}
+\subsection{Dependencias de Node.js}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Paquete} & \textbf{Propósito} \\
+\midrule
+\texttt{express}   & Framework HTTP para la API REST \\
+\texttt{mysql2}    & Driver MySQL con soporte async/await \\
+\texttt{mongodb}   & Driver oficial de MongoDB \\
+\texttt{dotenv}    & Carga de variables de entorno desde \texttt{.env} \\
+\texttt{cors}      & Habilitación de Cross-Origin Resource Sharing \\
+\bottomrule
+\end{tabular}
+\caption{Dependencias del proyecto}
+\end{table}
+% ══════════════════════════════════════════════
+\section{Modelo de Datos SQL (MySQL)}
+El modelo relacional consta de 6 tablas que representan el dominio de medición de huella de  (solo de ejemplo, el real este en el documento correspondiente):
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  table/.style={draw, rectangle, minimum width=3.2cm, minimum height=0.5cm, align=center, font=\small\ttfamily},
+  node distance=1.8cm and 3cm,
+  arr/.style={-{Stealth[length=2.5mm]}, thick}
+]
+  \node[table, fill=forest!10] (sector) {sector};
+  \node[table, fill=forest!10, right=3.5cm of sector] (pais) {pais};
+  \node[table, fill=forest!15, below=2cm of sector, xshift=1.75cm] (empresa) {empresa};
+  \node[table, fill=blue!8, below=2cm of empresa, xshift=-2.5cm] (fuente) {fuente\_emision};
+  \node[table, fill=blue!10, below=2cm of empresa, xshift=2.5cm] (consumo) {consumo};
+  \node[table, fill=orange!8, below=2cm of consumo] (calculo) {calculo\_emision};
+  \draw[arr] (empresa) -- node[left, font=\scriptsize]{FK} (sector);
+  \draw[arr] (empresa) -- node[right, font=\scriptsize]{FK} (pais);
+  \draw[arr] (consumo) -- node[right, font=\scriptsize]{FK} (empresa);
+  \draw[arr] (consumo) -- node[above, font=\scriptsize]{FK} (fuente);
+  \draw[arr] (calculo) -- node[right, font=\scriptsize]{FK 1:1} (consumo);
+\end{tikzpicture}
+\caption{Modelo entidad-relación simplificado}
+\end{figure}
+\begin{itemize}[nosep]
+  \item \textbf{sector:} Clasificación industrial (Energía, Transporte, Manufactura, etc.).
+  \item \textbf{pais:} País con código ISO de 3 letras.
+  \item \textbf{empresa:} Entidad que genera emisiones, con FK a sector y país. Incluye tamaño (micro, pequeña, mediana, grande).
+  \item \textbf{fuente\_emision:} Catálogo de fuentes con factor de emisión en kg CO$_2$eq por unidad, clasificadas por scope (1: directas, 2: indirectas energía, 3: otras indirectas).
+  \item \textbf{consumo:} Registro periódico de consumo de una empresa en una fuente específica.
+  \item \textbf{calculo\_emision:} Almacena el cálculo de emisión (cantidad $\times$ factor), con relación 1:1 al consumo.
+\end{itemize}
+Los datos semilla incluyen 6 sectores, 6 países, 200 empresas, 10 fuentes de emisión, 1000 consumos y 1000 cálculos de emisión, para un total de \textbf{2222 registros}. Los consumos y empresas se generan de forma programática en \texttt{seed.js}, cumpliendo con el requisito de poblar la base con al menos 1000 datos.
+\subsection{Verificación del volumen de datos}
+Las siguientes consultas pueden ejecutarse desde la consola de SQL libre de la aplicación para verificar que la base contiene más de 1000 registros. La primera retorna el conteo por tabla:
+\begin{lstlisting}[language=SQL, caption={Conteo de filas por tabla}]
+SELECT 'sector' AS tabla, COUNT(*) AS filas FROM sector
+UNION ALL SELECT 'pais',            COUNT(*) FROM pais
+UNION ALL SELECT 'fuente_emision',  COUNT(*) FROM fuente_emision
+UNION ALL SELECT 'empresa',         COUNT(*) FROM empresa
+UNION ALL SELECT 'consumo',         COUNT(*) FROM consumo
+UNION ALL SELECT 'calculo_emision', COUNT(*) FROM calculo_emision;
+\end{lstlisting}
+La segunda entrega el total acumulado de registros en toda la base de datos:
+\begin{lstlisting}[language=SQL, caption={Total de registros en la base de datos}]
+SELECT (SELECT COUNT(*) FROM sector)
+     + (SELECT COUNT(*) FROM pais)
+     + (SELECT COUNT(*) FROM fuente_emision)
+     + (SELECT COUNT(*) FROM empresa)
+     + (SELECT COUNT(*) FROM consumo)
+     + (SELECT COUNT(*) FROM calculo_emision) AS total_filas;
+\end{lstlisting}
+El resultado esperado es \texttt{consumo} = 1000, \texttt{calculo\_emision} = 1000 y un \texttt{total\_filas} = 2222, confirmando el cumplimiento del requisito.
+% ══════════════════════════════════════════════
+\section{Modelo NoSQL (MongoDB)}
+MongoDB Atlas almacena una colección \texttt{historial\_consultas} en la base de datos \texttt{huella\_carbono\_logs}. Cada documento tiene la siguiente estructura:
+\begin{lstlisting}[language=Java, caption={Estructura de un documento en MongoDB}]
+{
+  "tipo": "predefinida" | "libre" | "insercion",
+  "consulta": "SELECT e.nombre AS empresa ...",
+  "resultados": 10,
+  "error": null,
+  "fecha": ISODate("2026-06-18T12:30:00Z"),
+  "usuario": "web"
+}
+\end{lstlisting}
+Este esquema flexible permite registrar cualquier tipo de operación sin necesidad de migraciones, lo cual demuestra la ventaja de NoSQL para datos de auditoría y logging.
+% ══════════════════════════════════════════════
+\section{API REST --- Endpoints}
+El backend expone los siguientes endpoints:
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}llp{6.5cm}@{}}
+\toprule
+\textbf{Método} & \textbf{Ruta} & \textbf{Descripción} \\
+\midrule
+GET  & \texttt{/api/status}         & Estado de conexión a MySQL y MongoDB \\
+GET  & \texttt{/api/consultas}      & Lista las 6 consultas predefinidas \\
+GET  & \texttt{/api/consultas/:id}  & Ejecuta una consulta predefinida sobre MySQL \\
+POST & \texttt{/api/sql}            & Ejecuta SQL libre (solo SELECT, SHOW, DESCRIBE) \\
+GET  & \texttt{/api/historial}      & Últimas 50 consultas desde MongoDB \\
+GET  & \texttt{/api/sectores}       & Catálogo de sectores \\
+GET  & \texttt{/api/paises}         & Catálogo de países \\
+GET  & \texttt{/api/empresas}       & Lista de empresas \\
+GET  & \texttt{/api/fuentes}        & Catálogo de fuentes de emisión \\
+POST & \texttt{/api/empresas}       & Registra una nueva empresa \\
+POST & \texttt{/api/consumos}       & Registra consumo y calcula emisión automáticamente \\
+\bottomrule
+\end{tabular}
+\caption{Endpoints de la API REST}
+\end{table}
+\subsection{Seguridad}
+El endpoint de SQL libre valida que la consulta comience con \texttt{SELECT}, \texttt{SHOW} o \texttt{DESCRIBE}, rechazando cualquier operación de escritura (INSERT, UPDATE, DELETE, DROP, etc.).
+\subsection{Transacciones}
+El registro de consumo utiliza una \textbf{transacción MySQL}: inserta el consumo, obtiene el factor de emisión, calcula la emisión total, e inserta el cálculo. Si cualquier paso falla, se ejecuta \texttt{ROLLBACK}.
+% ══════════════════════════════════════════════
+\section{Frontend --- Interfaz de Usuario}
+La interfaz es una \textbf{Single Page Application} servida como archivo estático (\texttt{public/index.html}). Tiene un diseño con tema de sustentabilidad en tonos verdes y tipografía moderna (Space Grotesk + JetBrains Mono).
+\subsection{Pestañas}
+La aplicación se organiza en 4 pestañas:
+\begin{enumerate}[nosep]
+  \item \textbf{Consultas predefinidas:} 6 tarjetas interactivas que ejecutan consultas analíticas sobre MySQL (emisiones por empresa, por sector, por scope, consumos recientes, empresas por país, catálogo de fuentes).
+  \item \textbf{SQL libre:} Consola tipo terminal donde el usuario escribe consultas SELECT y ve resultados en tabla. Soporta atajo Ctrl+Enter.
+  \item \textbf{Historial:} Muestra las últimas 50 consultas almacenadas en MongoDB, con tipo, fecha y número de filas.
+  \item \textbf{Agregar datos:} Dos formularios para insertar datos:
+  \begin{itemize}[nosep]
+    \item Registro de empresa (nombre, tamaño, sector, país).
+    \item Registro de consumo (empresa, fuente, cantidad, periodo, fecha), con cálculo automático de emisión y preview en tiempo real.
+  \end{itemize}
+\end{enumerate}
+\subsection{Multilingüe}
+La aplicación soporta \textbf{español e inglés} mediante un toggle ES/EN en el header. Un diccionario de traducciones en JavaScript permite cambiar todo el texto de la interfaz instantáneamente sin recargar la página.
+\subsection{Indicadores de Estado}
+El header muestra badges en tiempo real que indican si las conexiones a MySQL y MongoDB están activas, con animaciones de pulso para el estado conectado.
+% ── Capturas ──
+\subsection{Capturas de Pantalla}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{consultas_predefinidas.png}
+\caption{Pestaña de consultas predefinidas}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{resultados_consulta.png}
+\caption{Resultados mostrados en tabla}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{sql_libre.png}
+\caption{Pestaña de SQL libre con consola}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{historial.png}
+\caption{Pestaña de historial desde MongoDB}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{registro.png}
+\caption{Pestaña de registro de empresa y consumo}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{ingles.png}
+\caption{Aplicación en modo inglés}
+\end{figure}
+% ══════════════════════════════════════════════
+\section{Flujo de Datos}
+\subsection{Consulta predefinida}
+\begin{enumerate}[nosep]
+  \item El usuario hace clic en una tarjeta de consulta.
+  \item El frontend envía \texttt{GET /api/consultas/:id} al backend.
+  \item El backend ejecuta el SQL en MySQL y obtiene los resultados.
+  \item El backend guarda un registro de la consulta en MongoDB (tipo, SQL, cantidad de filas, fecha).
+  \item El backend responde con los datos al frontend.
+  \item El frontend renderiza los resultados en una tabla HTML.
+\end{enumerate}
+\subsection{Registro de consumo}
+\begin{enumerate}[nosep]
+  \item El usuario llena el formulario (empresa, fuente, cantidad, periodo, fecha).
+  \item El frontend envía \texttt{POST /api/consumos} con los datos en JSON.
+  \item El backend inicia una transacción MySQL.
+  \item Obtiene el \texttt{factor\_emision} de la fuente seleccionada.
+  \item Inserta el registro en la tabla \texttt{consumo}.
+  \item Calcula \texttt{emision\_total = cantidad $\times$ factor\_emision}.
+  \item Inserta el cálculo en \texttt{calculo\_emision}.
+  \item Hace \texttt{COMMIT} (o \texttt{ROLLBACK} si falla).
+  \item Registra la operación en MongoDB.
+  \item Responde con la emisión calculada al frontend.
+\end{enumerate}
+% ══════════════════════════════════════════════
+\section{Despliegue}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Aspecto} & \textbf{Detalle} \\
+\midrule
+Hosting          & Railway (free trial: 30 días / \$5 USD) \\
+Auto-deploy      & Push a \texttt{main} en GitHub activa redeploy \\
+Variables de entorno & Configuradas en Railway (8 variables) \\
+SSL              & MySQL con SSL (rejectUnauthorized: false) \\
+Puerto           & \texttt{PORT=3000} (asignado por Railway) \\
+URL pública      & \url{https://proyecto-bases-production.up.railway.app} \\
+\bottomrule
+\end{tabular}
+\caption{Configuración de despliegue}
+\end{table}
+Las credenciales sensibles (contraseñas, connection strings) se manejan exclusivamente como variables de entorno y \textbf{nunca} se suben al repositorio (\texttt{.env} está en \texttt{.gitignore}).
+% ══════════════════════════════════════════════
+\section{Estructura del Proyecto}
+\begin{lstlisting}[caption={Árbol de archivos del proyecto}]
+poc-huella-carbono/
+  package.json        # Dependencias y scripts
+  server.js           # Backend Express (API + conexiones)
+  seed.js             # Script para crear tablas y datos semilla
+  .env                # Variables de entorno (no en Git)
+  .gitignore          # Excluye node_modules/ y .env
+  public/
+    index.html        # Frontend completo (HTML + CSS + JS)
+\end{lstlisting}
+% ══════════════════════════════════════════════
+\section{Conclusiones}
+\begin{itemize}[nosep]
+  \item Se logró integrar exitosamente \textbf{MySQL y MongoDB} en una misma aplicación web, demostrando las fortalezas de cada paradigma: SQL para datos estructurados con relaciones y NoSQL para logging flexible.
+  \item La aplicación cumple con su propósito como POC funcional: permite consultar, analizar y registrar datos de huella de carbono.
+  \item El despliegue en la nube con servicios gratuitos demuestra que es posible construir prototipos funcionales sin costo.
+  \item El soporte multilingüe (ES/EN) amplía la accesibilidad del POC.
+  \item La seguridad básica (validación de SQL, variables de entorno, SSL) está implementada adecuadamente para un entorno de demostración.
+\end{itemize}
+\end{document}

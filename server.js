@@ -238,6 +238,37 @@ app.get('/api/fuentes', async (req, res) => {
 });
 
 // =============================================
+// Visualización con FILTRO por atributo (sector)
+// Si no se envía id_sector, devuelve todas las empresas.
+// =============================================
+app.get('/api/emisiones-filtradas', async (req, res) => {
+  const { id_sector } = req.query;
+  let sql = `SELECT e.nombre AS empresa, s.nombre AS sector, p.nombre AS pais,
+              e.tamano, COALESCE(SUM(ce.emision_total), 0) AS emisiones_totales_kg
+            FROM empresa e
+            JOIN sector s ON e.id_sector = s.id_sector
+            JOIN pais p ON e.id_pais = p.id_pais
+            LEFT JOIN consumo c ON e.id_empresa = c.id_empresa
+            LEFT JOIN calculo_emision ce ON c.id_consumo = ce.id_consumo`;
+  const params = [];
+  if (id_sector) {
+    sql += ' WHERE e.id_sector = ?';
+    params.push(parseInt(id_sector));
+  }
+  sql += ` GROUP BY e.id_empresa, e.nombre, s.nombre, p.nombre, e.tamano
+           ORDER BY emisiones_totales_kg DESC
+           LIMIT 100`;
+  try {
+    const [rows] = await mysqlPool.execute(sql, params);
+    await logQuery('predefinida', sql, rows);
+    res.json({ nombre: 'Emisiones por empresa (filtrado por sector)', sql, datos: rows });
+  } catch (err) {
+    await logQuery('predefinida', sql, [], err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =============================================
 // Registro de empresa
 // =============================================
 app.post('/api/empresas', async (req, res) => {

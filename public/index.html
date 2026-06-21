@@ -760,6 +760,13 @@
       <div class="query-grid" id="query-grid">
         <div class="loading"><span class="spinner"></span> Cargando consultas...</div>
       </div>
+      <div class="filtro-bar" style="display:flex; align-items:flex-end; gap:0.75rem; flex-wrap:wrap; margin:1.25rem 0; padding:1rem; border:1px solid var(--lichen,#d6e8dd); border-radius:10px; background:#F6FAF7;">
+        <div style="display:flex; flex-direction:column; gap:0.35rem;">
+          <label for="filtro-sector" style="font-weight:600; font-size:0.9rem;" data-i18n="lbl_filtro_sector">Filtrar emisiones por sector</label>
+          <select id="filtro-sector" style="min-width:220px; padding:0.5rem;"><option value="">Todos los sectores</option></select>
+        </div>
+        <button class="btn btn-primary" onclick="filtrarEmisiones()" data-i18n="btn_filtrar">Filtrar</button>
+      </div>
       <div class="results-section" id="results-predefinidas" style="display:none;"></div>
     </div>
 
@@ -884,6 +891,9 @@
         title: 'Calculadora de Huella de Carbono',
         subtitle: 'Consola de medicion · kg CO₂e',
         tab_predefinidas: 'Consultas predefinidas',
+        lbl_filtro_sector: 'Filtrar emisiones por sector',
+        btn_filtrar: 'Filtrar',
+        opt_todos_sectores: 'Todos los sectores',
         tab_sql: 'SQL libre',
         tab_historial: 'Historial',
         tab_agregar: 'Agregar datos',
@@ -944,6 +954,9 @@
         title: 'Carbon Footprint Calculator',
         subtitle: 'Measurement console · kg CO₂e',
         tab_predefinidas: 'Predefined queries',
+        lbl_filtro_sector: 'Filter emissions by sector',
+        btn_filtrar: 'Filter',
+        opt_todos_sectores: 'All sectors',
         tab_sql: 'Free SQL',
         tab_historial: 'History',
         tab_agregar: 'Add data',
@@ -1142,6 +1155,37 @@
 
       try {
         const res = await fetch(API + '/api/consultas/' + id);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        mostrarResultados(section, data.nombre, data.sql, data.datos);
+        section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {
+        section.innerHTML = '<div class="error-msg">' + t('error_prefix') + escapeHtml(e.message) + '</div>';
+      }
+    }
+
+    // =============================================
+    // Filtro por atributo (sector) sobre la visualizacion
+    // =============================================
+    async function cargarFiltroSectores() {
+      try {
+        const sectores = await fetch(API + '/api/sectores').then(r => r.json());
+        const sel = document.getElementById('filtro-sector');
+        sel.innerHTML = '<option value="">' + t('opt_todos_sectores') + '</option>' +
+          sectores.map(s => '<option value="' + s.id_sector + '">' + escapeHtml(s.nombre) + '</option>').join('');
+      } catch (e) {
+        console.error('Error cargando sectores para filtro:', e);
+      }
+    }
+
+    async function filtrarEmisiones() {
+      const idSector = document.getElementById('filtro-sector').value;
+      const section = document.getElementById('results-predefinidas');
+      section.style.display = 'block';
+      section.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading_ejecutando') + '</div>';
+      try {
+        const url = API + '/api/emisiones-filtradas' + (idSector ? '?id_sector=' + idSector : '');
+        const res = await fetch(url);
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         mostrarResultados(section, data.nombre, data.sql, data.datos);
@@ -1405,6 +1449,7 @@
     // Init
     checkStatus();
     cargarConsultas();
+    cargarFiltroSectores();
   </script>
 </body>
 </html>
